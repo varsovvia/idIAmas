@@ -576,15 +576,25 @@ class ModernPyQt6Popup(QMainWindow):
         return tab
     
     def create_grammar_content(self, content: str) -> QWidget:
-        """Create grammar explanation content with individual word cards"""
-        scroll_area = QScrollArea()
+        """Create grammar explanation content with individual word cards and gradient fade"""
+        # Create container widget with relative positioning
+        container = QWidget()
+        container.setMinimumHeight(400)  # Ensure minimum height for overlay
+        
+        # Create scroll area
+        scroll_area = QScrollArea(container)
         scroll_area.setWidgetResizable(True)
         scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         
+        # Use a layout to properly manage the scroll area
+        container_layout = QVBoxLayout(container)
+        container_layout.setContentsMargins(0, 0, 0, 0)
+        container_layout.addWidget(scroll_area)
+        
         widget = QWidget()
         layout = QVBoxLayout(widget)
-        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setContentsMargins(10, 10, 10, 80)  # Extra bottom margin for gradient
         layout.setSpacing(15)
         
         if not content.strip():
@@ -593,7 +603,9 @@ class ModernPyQt6Popup(QMainWindow):
             layout.addWidget(label)
             layout.addStretch()
             scroll_area.setWidget(widget)
-            return scroll_area
+            # Add gradient overlay
+            gradient_overlay = self.create_gradient_overlay(container)
+            return container
         
         # Parse the grammar content into word explanations
         word_explanations = self.parse_word_explanations(content)
@@ -602,7 +614,9 @@ class ModernPyQt6Popup(QMainWindow):
             # Fallback to original formatting if parsing fails
             fallback_content = self.create_fallback_grammar_content(content)
             scroll_area.setWidget(fallback_content)
-            return scroll_area
+            # Add gradient overlay
+            gradient_overlay = self.create_gradient_overlay(container)
+            return container
         
         # Create word cards
         for word_data in word_explanations:
@@ -636,7 +650,48 @@ class ModernPyQt6Popup(QMainWindow):
             }
         """)
         
-        return scroll_area
+        # Create gradient overlay positioned at bottom
+        gradient_overlay = self.create_gradient_overlay(container)
+        
+        return container
+    
+    def create_gradient_overlay(self, parent: QWidget) -> QWidget:
+        """Create a gradient overlay that fades content into the background"""
+        overlay = QWidget(parent)
+        overlay.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)  # Allow clicks through
+        overlay.setGeometry(0, parent.height() - 80, parent.width(), 80)  # Position at bottom
+        overlay.raise_()  # Ensure it's on top
+        
+        # Create gradient style that matches the tab background and fades from transparent to opaque
+        overlay.setStyleSheet("""
+            QWidget {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(26, 26, 46, 0),
+                    stop:0.2 rgba(26, 26, 46, 0.1),
+                    stop:0.5 rgba(26, 26, 46, 0.4),
+                    stop:0.8 rgba(26, 26, 46, 0.8),
+                    stop:1.0 rgba(26, 26, 46, 1.0));
+                border: none;
+                border-radius: 0px;
+            }
+        """)
+        
+        # Create a resize handler to keep overlay positioned correctly
+        def update_overlay_position():
+            if parent and overlay:
+                overlay.setGeometry(0, parent.height() - 80, parent.width(), 80)
+                overlay.raise_()
+        
+        # Connect to resize event (using QTimer for better performance)
+        from PyQt6.QtCore import QTimer
+        timer = QTimer()
+        timer.timeout.connect(update_overlay_position)
+        timer.start(100)  # Update every 100ms
+        
+        # Initial positioning
+        update_overlay_position()
+        
+        return overlay
     
     def parse_word_explanations(self, content: str) -> list:
         """Parse grammar content into individual word explanations"""

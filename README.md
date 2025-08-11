@@ -62,15 +62,16 @@ A powerful, real-time Italian subtitle translator that helps you learn Italian w
 
 ## 🎨 Modern Desktop Popup
 
-The new interface features:
+The new PyQt6 interface features:
 
-- **Professional Design** - Clean, modern appearance similar to business applications
+- **Professional Design** - Clean, modern appearance with true gradients and shadows
 - **Tabbed Interface** - Organized sections for Original, Translation, and Grammar
 - **Always on Top** - Stays visible while you continue watching
 - **Draggable** - Move it anywhere on your screen
 - **Copy Buttons** - Easy copying of any content
-- **Smooth Animations** - Beautiful entrance and exit effects
+- **Smooth Animations** - Beautiful entrance and exit effects with easing curves
 - **Responsive Layout** - Adapts to different content lengths
+- **Advanced Styling** - Drop shadows, glow effects, and modern UI components
 
 ## 🔧 Configuration
 
@@ -104,7 +105,7 @@ The `SUBTITLES_REGION` defines where subtitles appear on your screen:
 
 ## 🏗️ Architecture
 
-- **PyQt6** - Modern desktop GUI framework
+- **PyQt6** - Modern desktop GUI framework with gradients and animations
 - **OpenAI GPT-3.5-turbo** - AI-powered translation and explanations
 - **Tesseract OCR** - Text extraction from images
 - **PyAutoGUI** - Screen capture functionality

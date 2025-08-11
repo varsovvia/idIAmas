@@ -3,9 +3,9 @@ import pytesseract
 from PIL import Image
 from openai import OpenAI
 from pynput import keyboard
-import tkinter as tk
-from modern_popup import mostrar_explicacion_moderna
-from utilidades import guardar_imagen
+
+from modern_popup_pyqt6 import mostrar_explicacion_moderna_pyqt6
+from utilidades import save_image
 import time
 import os
 import logging
@@ -42,7 +42,8 @@ class Config:
     model: str = "gpt-3.5-turbo"
     max_tokens: int = 500
     temperature: float = 0.7
-    language: str = 'ita'
+    ocr_language: str = 'ita'  # Language for OCR (source text)
+    explanation_language: str = 'spanish'  # Language for explanations
     threshold: int = 200
 
 class SubtitleTranslator:
@@ -82,7 +83,7 @@ class SubtitleTranslator:
             imagen = imagen.point(lambda x: 0 if x < self.config.threshold else 255, '1')
             
             # Extract text
-            texto = pytesseract.image_to_string(imagen, lang=self.config.language).strip()
+            texto = pytesseract.image_to_string(imagen, lang=self.config.ocr_language).strip()
             
             if not texto:
                 logger.warning("No text detected in image")
@@ -95,42 +96,46 @@ class SubtitleTranslator:
             logger.error(f"Failed to extract text: {e}")
             return ""
     
-    def traducir_texto_con_explicacion(self, texto: str) -> str:
+    def translate_text_with_explanation(self, texto: str) -> str:
         """Translate text with comprehensive error handling"""
         if not texto:
-            return "No se detectó texto en la imagen."
+            return "No text detected in the image."
         
         if not self.client:
-            return "Error: No se ha configurado la API key de OpenAI."
+            return "Error: OpenAI API key not configured."
         
         try:
+            # Dynamic language selection for explanations
+            explanation_lang = self.config.explanation_language
+            target_lang = "Spanish" if explanation_lang == "spanish" else explanation_lang.title()
+            
             prompt = (
-                f"Traduce el siguiente texto italiano y proporciona una explicación completa en español. "
-                f"Formatea tu respuesta de la siguiente manera:\n\n"
-                f"TEXTO ORIGINAL:\n"
-                f"[Escribe aquí el texto italiano tal como fue recibido]\n\n"
-                f"TRADUCCIÓN AL ESPAÑOL:\n"
-                f"[Traducción clara y natural al español]\n\n"
-                f"EXPLICACIÓN GRAMATICAL:\n"
-                f"[Explica cada palabra o frase importante, su función gramatical y significado. "
-                f"Sé claro y educativo para un principiante]\n\n"
-                f"Texto a traducir: {texto}\n\n"
-                f"Respuesta:"
+                f"Translate the following Italian text and provide a complete explanation in {target_lang}. "
+                f"Format your response exactly as follows:\n\n"
+                f"ORIGINAL TEXT:\n"
+                f"[Write the Italian text exactly as received]\n\n"
+                f"TRANSLATION TO {target_lang.upper()}:\n"
+                f"[Clear and natural translation to {target_lang}]\n\n"
+                f"GRAMMAR EXPLANATION:\n"
+                f"[Explain each important word or phrase, its grammatical function and meaning. "
+                f"Be clear and educational for a beginner]\n\n"
+                f"Text to translate: {texto}\n\n"
+                f"Response:"
             )
 
             response = self.client.chat.completions.create(
                 model=self.config.model,
                 messages=[
-                    {"role": "system", "content": "Eres un profesor de italiano para principiantes. Recibes frases en italiano sacadas de subtítulos. "
-                    "Tu tarea es:\n"
-                    "1. Reescribir la frase en italiano tal como fue recibida (TEXTO ORIGINAL)\n"
-                    "2. Traducirla al español con el mismo sentido (TRADUCCIÓN AL ESPAÑOL)\n"
-                    "3. Explicar cada palabra importante en la frase (EXPLICACIÓN GRAMATICAL):\n"
-                    "   - significado en español\n"
-                    "   - función gramatical (verbo, sustantivo, preposición...)\n"
-                    "   - notas si hay contracciones, conjugaciones o expresiones comunes\n"
-                    "4. Usa el formato exacto especificado en el prompt\n"
-                    "Sé claro, paciente y directo, como si el lector no supiera nada aún."},
+                    {"role": "system", "content": f"You are an Italian teacher for beginners. You receive Italian phrases from subtitles. "
+                    f"Your task is:\n"
+                    f"1. Rewrite the Italian phrase exactly as received (ORIGINAL TEXT)\n"
+                    f"2. Translate it to {target_lang} with the same meaning (TRANSLATION TO {target_lang.upper()})\n"
+                    f"3. Explain each important word in the phrase (GRAMMAR EXPLANATION):\n"
+                    f"   - meaning in {target_lang}\n"
+                    f"   - grammatical function (verb, noun, preposition...)\n"
+                    f"   - notes about contractions, conjugations or common expressions\n"
+                    f"4. Use the exact format specified in the prompt\n"
+                    f"Be clear, patient and direct, as if the reader knows nothing yet."},
                     {"role": "user", "content": prompt},
                 ],
                 max_tokens=self.config.max_tokens,
@@ -151,9 +156,9 @@ class SubtitleTranslator:
             
         except Exception as e:
             logger.error(f"Translation failed: {e}")
-            return f"Error en la traducción: {str(e)}"
+            return f"Translation error: {str(e)}"
     
-    def ejecutar_traduccion(self) -> bool:
+    def execute_translation(self) -> bool:
         """Execute complete translation workflow with timing and error handling"""
         start_time = time.time()
         
@@ -179,13 +184,13 @@ class SubtitleTranslator:
             logger.info(f"Text extraction completed in {extraction_time:.2f} seconds")
             
             # Translate
-            traduccion = self.traducir_texto_con_explicacion(texto)
+            translation = self.translate_text_with_explanation(texto)
             total_time = time.time() - start_time
             logger.info(f"Translation workflow completed in {total_time:.2f} seconds")
             
             # Show results in modern desktop popup
-            mostrar_explicacion_moderna(traduccion)
-            guardar_imagen(imagen)
+            mostrar_explicacion_moderna_pyqt6(translation)
+            save_image(imagen)
             
             return True
             
@@ -201,7 +206,8 @@ def load_config() -> Config:
         model=os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo'),
         max_tokens=int(os.getenv('MAX_TOKENS', '500')),
         temperature=float(os.getenv('TEMPERATURE', '0.7')),
-        language=os.getenv('OCR_LANGUAGE', 'ita'),
+        ocr_language=os.getenv('OCR_LANGUAGE', 'ita'),
+        explanation_language=os.getenv('EXPLANATION_LANGUAGE', 'spanish'),
         threshold=int(os.getenv('IMAGE_THRESHOLD', '200'))
     )
 
@@ -210,7 +216,7 @@ def on_press(translator: SubtitleTranslator, key):
     try:
         if key.char == 'i':
             logger.info("Translation requested via hotkey")
-            success = translator.ejecutar_traduccion()
+            success = translator.execute_translation()
             if not success:
                 logger.error("Translation failed")
         elif key.char == 'q':
@@ -243,7 +249,7 @@ def main():
         # Initialize translator
         translator = SubtitleTranslator(config)
         
-        print("Listener iniciado. Pulsa la tecla 'i' para traducir, 'q' o 'Esc' para salir.")
+        print("Listener started. Press 'i' to translate, 'q' or 'Esc' to exit.")
         logger.info("Application started successfully")
         
         with keyboard.Listener(on_press=lambda key: on_press(translator, key)) as listener:

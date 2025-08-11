@@ -903,14 +903,14 @@ def parse_ai_response(texto: str) -> dict:
         if not line:
             continue
             
-        # Detect section headers
-        if any(keyword in line.lower() for keyword in ['texto original', 'italiano', 'original', 'frase']):
+        # Detect section headers (support both English and Spanish for compatibility)
+        if any(keyword in line.lower() for keyword in ['original text', 'texto original', 'italiano', 'original', 'frase']):
             current_section = 'original'
             continue
-        elif any(keyword in line.lower() for keyword in ['traducción al español', 'español', 'traducción', 'traducida']):
+        elif any(keyword in line.lower() for keyword in ['translation to', 'traducción al español', 'español', 'traducción', 'traducida', 'translation']):
             current_section = 'translation'
             continue
-        elif any(keyword in line.lower() for keyword in ['explicación gramatical', 'gramática', 'explicación', 'palabras', 'función']):
+        elif any(keyword in line.lower() for keyword in ['grammar explanation', 'explicación gramatical', 'gramática', 'explicación', 'palabras', 'función']):
             current_section = 'grammar'
             continue
             
@@ -929,16 +929,16 @@ def parse_ai_response(texto: str) -> dict:
 if __name__ == "__main__":
     # Test the modern PyQt6 popup
     test_text = """
-    TEXTO ORIGINAL:
+    ORIGINAL TEXT:
     Ciao, come stai?
     
-    TRADUCCIÓN AL ESPAÑOL:
+    TRANSLATION TO SPANISH:
     Hola, ¿cómo estás?
     
-    EXPLICACIÓN GRAMATICAL:
-    - Ciao: saludo informal en italiano
-    - come: cómo (adverbio interrogativo)
-    - stai: segunda persona del verbo 'stare' (estar)
+    GRAMMAR EXPLANATION:
+    - Ciao: informal greeting in Italian
+    - come: how (interrogative adverb)
+    - stai: second person of the verb 'stare' (to be/stay)
     """
     
     # Create QApplication and show popup

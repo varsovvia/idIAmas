@@ -1,9 +1,9 @@
 import os
 from datetime import datetime
 
-def guardar_imagen(imagen):
-    carpeta = "capturas_subtitulos"
-    os.makedirs(carpeta, exist_ok=True)
+def save_image(image):
+    folder = "subtitle_captures"
+    os.makedirs(folder, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    ruta = os.path.join(carpeta, f"sub_{timestamp}.png")
-    imagen.save(ruta)
+    path = os.path.join(folder, f"sub_{timestamp}.png")
+    image.save(path)

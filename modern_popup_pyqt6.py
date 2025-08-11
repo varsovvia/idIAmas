@@ -748,22 +748,52 @@ def mostrar_explicacion_moderna_pyqt6(texto: str):
     """Main function to display translation results in the modern PyQt6 popup"""
     global _active_popup_processes
     
+    print("🚀 Starting popup display...")
+    
     try:
-        # Clean up any finished processes first
-        _active_popup_processes = [p for p in _active_popup_processes if p.poll() is None]
-        
-        # Close any existing popups to prevent multiple popups
-        for process in _active_popup_processes:
-            try:
-                process.terminate()
-            except:
-                pass
-        _active_popup_processes.clear()
-        
         # Parse the AI response
         sections = parse_ai_response(texto)
+        print(f"📄 Parsed sections: {list(sections.keys())}")
         
-        # Create popup in a subprocess to avoid threading issues
+        # Check if we're in the main thread
+        import threading
+        is_main_thread = threading.current_thread() is threading.main_thread()
+        print(f"🧵 Running in main thread: {is_main_thread}")
+        
+        if not is_main_thread:
+            print("🔄 Not in main thread, using subprocess approach...")
+            return _create_subprocess_popup(sections)
+        
+        # Try direct approach first (simpler and more reliable)
+        print("🎯 Attempting direct popup creation...")
+        
+        # Check if QApplication exists
+        app = QApplication.instance()
+        if app is None:
+            print("📱 Creating new QApplication...")
+            app = QApplication(sys.argv)
+        else:
+            print("📱 Using existing QApplication...")
+        
+        # Create and show popup directly
+        popup = ModernPyQt6Popup(sections)
+        popup.show()
+        popup.raise_()
+        popup.activateWindow()
+        
+        print("✅ Direct popup created successfully!")
+        return popup
+        
+    except Exception as direct_error:
+        print(f"❌ Direct approach failed: {direct_error}")
+        print("🔄 Falling back to subprocess approach...")
+        
+        # Fallback to subprocess approach
+        return _create_subprocess_popup(sections)
+
+def _create_subprocess_popup(sections: dict):
+    """Create popup using subprocess approach as fallback"""
+    try:
         import subprocess
         import json
         import tempfile
@@ -774,7 +804,7 @@ def mostrar_explicacion_moderna_pyqt6(texto: str):
             json.dump(sections, f, ensure_ascii=False, indent=2)
             temp_file = f.name
         
-        # Create a simple subprocess script with detailed debugging
+        # Create a simple subprocess script
         popup_script = f'''
 import sys
 import json
@@ -782,121 +812,52 @@ import os
 sys.path.insert(0, r"{os.getcwd()}")
 
 print("=== POPUP SUBPROCESS STARTED ===")
-print(f"Python executable: {{sys.executable}}")
-print(f"Working directory: {{os.getcwd()}}")
-print(f"Temp file: {temp_file}")
-
 try:
-    print("Importing PyQt6...")
     from PyQt6.QtWidgets import QApplication
-    print("PyQt6 imported successfully")
-    
-    print("Importing ModernPyQt6Popup...")
     from modern_popup_pyqt6 import ModernPyQt6Popup
-    print("ModernPyQt6Popup imported successfully")
     
-    print("Loading translation data...")
     with open(r"{temp_file}", 'r', encoding='utf-8') as f:
         sections = json.load(f)
-    print(f"Data loaded successfully: {{list(sections.keys())}}")
     
-    print("Creating QApplication...")
     app = QApplication(sys.argv)
-    print("QApplication created successfully")
-    
-    print("Creating popup...")
     popup = ModernPyQt6Popup(sections)
-    print("Popup created successfully")
-    
-    print("Showing popup...")
     popup.show()
     popup.raise_()
     popup.activateWindow()
     
-    print("✅ Premium popup displayed successfully! Window should be visible.")
-    print("Starting event loop...")
-    
-    # Keep the console open for debugging
-    import time
-    time.sleep(2)  # Give time to see the popup
-    
-    # Run event loop
+    print("✅ Popup displayed successfully!")
     result = app.exec()
-    print(f"App finished with result: {{result}}")
     
 except Exception as e:
-    print(f"❌ ERROR in popup subprocess: {{e}}")
+    print(f"❌ ERROR: {{e}}")
     import traceback
     traceback.print_exc()
-    print("\\n=== Detailed Error Info ===")
-    print(f"Exception type: {{type(e).__name__}}")
-    print(f"Exception args: {{e.args}}")
-    print("\\nKeeping console open for debugging...")
     input("Press Enter to close...")
 finally:
-    # Cleanup
     try:
         os.unlink(r"{temp_file}")
-        print("Temp file cleaned up")
-    except Exception as cleanup_error:
-        print(f"Cleanup error: {{cleanup_error}}")
+    except:
+        pass
 '''
         
-        # Write the script to a temporary file with UTF-8 encoding
+        # Write and launch script
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False, encoding='utf-8') as f:
             f.write(popup_script)
             script_file = f.name
         
-        # Launch the popup in a separate process with visible console for debugging
         if sys.platform == 'win32':
-            # On Windows, create a visible console window to see any errors
             process = subprocess.Popen([sys.executable, script_file], 
                                      creationflags=subprocess.CREATE_NEW_CONSOLE)
         else:
             process = subprocess.Popen([sys.executable, script_file])
         
-        # Track the process
         _active_popup_processes.append(process)
-        
-        print("✨ Premium popup launched in separate process with visible console")
-        
-        # Clean up the script file after a delay
-        def cleanup_script():
-            import time
-            time.sleep(10)  # Wait 10 seconds
-            try:
-                os.unlink(script_file)
-            except:
-                pass
-        
-        import threading
-        threading.Thread(target=cleanup_script, daemon=True).start()
-        
+        print("✨ Subprocess popup launched")
         return None
         
     except Exception as e:
-        print(f"Error creating popup: {e}")
-        import traceback
-        traceback.print_exc()
-        
-        # Fallback: Try direct approach (may have threading warnings but should work)
-        print("Trying fallback direct popup approach...")
-        try:
-            sections = parse_ai_response(texto)
-            app = QApplication.instance()
-            if app is None:
-                app = QApplication(sys.argv)
-            
-            popup = ModernPyQt6Popup(sections)
-            popup.show()
-            popup.raise_()
-            popup.activateWindow()
-            
-            print("Fallback popup displayed")
-            return popup
-        except Exception as fallback_error:
-            print(f"Fallback also failed: {fallback_error}")
-            return None
+        print(f"❌ Subprocess creation failed: {e}")
+        return None
 
 def parse_ai_response(texto: str) -> dict:
     """Parse the AI response into structured sections"""

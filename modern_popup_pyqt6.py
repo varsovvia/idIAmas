@@ -741,12 +741,21 @@ class ModernPyQt6Popup(QMainWindow):
         print("Popup closing...")
         event.accept()
 
-# Global variable to track active popups
+# Global variables to track active popups and prevent rapid triggers
 _active_popup_processes = []
+_last_popup_time = 0
 
 def mostrar_explicacion_moderna_pyqt6(texto: str):
     """Main function to display translation results in the modern PyQt6 popup"""
-    global _active_popup_processes
+    global _active_popup_processes, _last_popup_time
+    
+    # Prevent rapid-fire popups (wait at least 1 second between popups)
+    import time
+    current_time = time.time()
+    if current_time - _last_popup_time < 1.0:
+        print("⏰ Popup request too soon, ignoring...")
+        return None
+    _last_popup_time = current_time
     
     print("🚀 Starting popup display...")
     
@@ -793,7 +802,24 @@ def mostrar_explicacion_moderna_pyqt6(texto: str):
 
 def _create_subprocess_popup(sections: dict):
     """Create popup using subprocess approach as fallback"""
+    global _active_popup_processes
+    
     try:
+        # Clean up any finished processes first
+        _active_popup_processes = [p for p in _active_popup_processes if p.poll() is None]
+        
+        # Close any existing popups to prevent multiple popups
+        for process in _active_popup_processes:
+            try:
+                process.terminate()
+                process.wait(timeout=2)  # Wait up to 2 seconds for clean termination
+            except:
+                try:
+                    process.kill()  # Force kill if terminate doesn't work
+                except:
+                    pass
+        _active_popup_processes.clear()
+        
         import subprocess
         import json
         import tempfile
@@ -832,7 +858,6 @@ except Exception as e:
     print(f"❌ ERROR: {{e}}")
     import traceback
     traceback.print_exc()
-    input("Press Enter to close...")
 finally:
     try:
         os.unlink(r"{temp_file}")
@@ -846,8 +871,9 @@ finally:
             script_file = f.name
         
         if sys.platform == 'win32':
+            # Hide the console window for a cleaner experience
             process = subprocess.Popen([sys.executable, script_file], 
-                                     creationflags=subprocess.CREATE_NEW_CONSOLE)
+                                     creationflags=subprocess.CREATE_NO_WINDOW)
         else:
             process = subprocess.Popen([sys.executable, script_file])
         

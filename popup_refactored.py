@@ -22,7 +22,7 @@ from PyQt6.QtGui import (
 
 class FadeOverlay(QWidget):
     """
-    Transparent overlay widget that creates a gradient fade effect.
+    Transparent overlay widget that creates a gradient fade effect on all sides.
     Attaches to scroll area viewport and tracks scrolling automatically.
     """
     
@@ -61,24 +61,15 @@ class FadeOverlay(QWidget):
         self.update_position()
     
     def update_position(self):
-        """Update overlay position and size based on viewport"""
+        """Update overlay position and size to cover entire viewport"""
         if not self.scroll_area or not self.scroll_area.viewport():
             return
             
         viewport = self.scroll_area.viewport()
         viewport_rect = viewport.rect()
         
-        # Position overlay to cover bottom of viewport
-        bottom_fade_rect = viewport_rect
-        bottom_fade_rect.setTop(max(0, viewport_rect.height() - self.fade_height))
-        
-        self.setGeometry(bottom_fade_rect)
-        
-        # Check if we need top fade (when scrolled down)
-        scroll_bar = self.scroll_area.verticalScrollBar()
-        if scroll_bar and scroll_bar.value() > 0:
-            # Could implement top fade here if needed
-            pass
+        # Cover the entire viewport for all-sides gradient
+        self.setGeometry(viewport_rect)
     
     def get_background_colors(self):
         """Get background colors from application palette"""
@@ -94,7 +85,7 @@ class FadeOverlay(QWidget):
             return QColor(248, 249, 250, 255), QColor(248, 249, 250, 0)
     
     def paintEvent(self, event):
-        """Paint the gradient fade overlay"""
+        """Paint gradient fade overlays on all sides"""
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
@@ -104,15 +95,58 @@ class FadeOverlay(QWidget):
         # Get background colors
         bg_opaque, bg_transparent = self.get_background_colors()
         
-        # Create vertical gradient
-        gradient = QLinearGradient(0, 0, 0, self.height())
-        gradient.setColorAt(0.0, bg_transparent)  # Top: transparent
-        gradient.setColorAt(0.3, QColor(bg_opaque.red(), bg_opaque.green(), bg_opaque.blue(), 77))  # 30% opacity
-        gradient.setColorAt(0.7, QColor(bg_opaque.red(), bg_opaque.green(), bg_opaque.blue(), 204))  # 80% opacity
-        gradient.setColorAt(1.0, bg_opaque)  # Bottom: fully opaque
+        rect = self.rect()
+        fade_size = self.fade_height
         
-        # Apply gradient as brush and fill the rect
-        painter.fillRect(self.rect(), QBrush(gradient))
+        # Create gradients for all four sides
+        
+        # Top gradient (fade from transparent to background)
+        if self.should_show_top_fade():
+            top_gradient = QLinearGradient(0, 0, 0, fade_size)
+            top_gradient.setColorAt(0.0, bg_opaque)  # Top: opaque background
+            top_gradient.setColorAt(0.3, QColor(bg_opaque.red(), bg_opaque.green(), bg_opaque.blue(), 204))
+            top_gradient.setColorAt(0.7, QColor(bg_opaque.red(), bg_opaque.green(), bg_opaque.blue(), 77))
+            top_gradient.setColorAt(1.0, bg_transparent)  # Bottom: transparent
+            
+            top_rect = rect
+            top_rect.setHeight(fade_size)
+            painter.fillRect(top_rect, QBrush(top_gradient))
+        
+        # Bottom gradient (fade from transparent to background)
+        bottom_gradient = QLinearGradient(0, rect.height() - fade_size, 0, rect.height())
+        bottom_gradient.setColorAt(0.0, bg_transparent)  # Top: transparent
+        bottom_gradient.setColorAt(0.3, QColor(bg_opaque.red(), bg_opaque.green(), bg_opaque.blue(), 77))
+        bottom_gradient.setColorAt(0.7, QColor(bg_opaque.red(), bg_opaque.green(), bg_opaque.blue(), 204))
+        bottom_gradient.setColorAt(1.0, bg_opaque)  # Bottom: opaque background
+        
+        bottom_rect = rect
+        bottom_rect.setTop(rect.height() - fade_size)
+        painter.fillRect(bottom_rect, QBrush(bottom_gradient))
+        
+        # Left gradient
+        left_gradient = QLinearGradient(0, 0, fade_size // 2, 0)
+        left_gradient.setColorAt(0.0, bg_opaque)  # Left: opaque background
+        left_gradient.setColorAt(0.5, QColor(bg_opaque.red(), bg_opaque.green(), bg_opaque.blue(), 128))
+        left_gradient.setColorAt(1.0, bg_transparent)  # Right: transparent
+        
+        left_rect = rect
+        left_rect.setWidth(fade_size // 2)
+        painter.fillRect(left_rect, QBrush(left_gradient))
+        
+        # Right gradient
+        right_gradient = QLinearGradient(rect.width() - fade_size // 2, 0, rect.width(), 0)
+        right_gradient.setColorAt(0.0, bg_transparent)  # Left: transparent
+        right_gradient.setColorAt(0.5, QColor(bg_opaque.red(), bg_opaque.green(), bg_opaque.blue(), 128))
+        right_gradient.setColorAt(1.0, bg_opaque)  # Right: opaque background
+        
+        right_rect = rect
+        right_rect.setLeft(rect.width() - fade_size // 2)
+        painter.fillRect(right_rect, QBrush(right_gradient))
+    
+    def should_show_top_fade(self):
+        """Check if we should show top fade (when scrolled down)"""
+        scroll_bar = self.scroll_area.verticalScrollBar()
+        return scroll_bar and scroll_bar.value() > 0
 
 
 class GrammarCard(QWidget):
@@ -455,7 +489,7 @@ class PopupWindow(QMainWindow):
         #centralWidget {{
             background: {bg_primary};
             border-radius: 12px;
-            border: 1px solid {border_color};
+            border: none;
         }}
         
         #headerFrame {{
@@ -487,7 +521,7 @@ class PopupWindow(QMainWindow):
         
         #closeButton {{
             background: transparent;
-            border: 1px solid {border_color};
+            border: none;
             border-radius: 16px;
             color: {text_secondary};
             font-size: 18px;
@@ -496,7 +530,7 @@ class PopupWindow(QMainWindow):
         
         #closeButton:hover {{
             background: rgba(255, 0, 0, 0.1);
-            border-color: #ff6b6b;
+            border: none;
             color: #ff6b6b;
         }}
         
@@ -506,7 +540,7 @@ class PopupWindow(QMainWindow):
         }}
         
         #mainTabs::pane {{
-            border: 1px solid {border_color};
+            border: none;
             border-radius: 8px;
             background: {bg_secondary};
         }}
@@ -517,7 +551,7 @@ class PopupWindow(QMainWindow):
         
         #mainTabs QTabBar::tab {{
             background: {bg_secondary};
-            border: 1px solid {border_color};
+            border: none;
             padding: 8px 16px;
             margin-right: 2px;
             border-top-left-radius: 8px;
@@ -528,7 +562,7 @@ class PopupWindow(QMainWindow):
         #mainTabs QTabBar::tab:selected {{
             background: {bg_primary};
             color: {accent_color};
-            border-bottom: 1px solid {bg_primary};
+            border: none;
         }}
         
         #textDisplay {{
@@ -547,14 +581,14 @@ class PopupWindow(QMainWindow):
         
         #grammarCard {{
             background: {card_bg};
-            border: 1px solid {border_color};
+            border: none;
             border-radius: 8px;
             margin-bottom: 8px;
         }}
         
         #grammarCard:hover {{
-            border-color: {accent_color};
             background: rgba(0, 212, 255, 0.05);
+            border: none;
         }}
         
         #wordTitle {{

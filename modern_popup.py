@@ -8,11 +8,13 @@ import tkinter as tk
 from tkinter import ttk
 import time
 import threading
+import queue
 
 class ModernPopup:
     def __init__(self, translation_data):
         self.translation_data = translation_data
         self.root = None
+        self.popup_queue = queue.Queue()
         self.create_popup()
         
     def create_popup(self):
@@ -22,7 +24,7 @@ class ModernPopup:
         self.root.title("🎯 idIAmas - Traducción")
         
         # Configure window properties
-        self.root.geometry("800x600")
+        self.root.geometry("900x700")
         self.root.resizable(False, False)
         self.root.attributes('-topmost', True)  # Always on top
         self.root.overrideredirect(True)  # Remove window decorations
@@ -30,12 +32,12 @@ class ModernPopup:
         # Center the window
         self.center_window()
         
-        # Apply modern styling
-        self.root.configure(bg='#0a0a0a')
+        # Apply modern styling with enhanced colors
+        self.root.configure(bg='#0f0f23')  # Darker, more sophisticated background
         
-        # Create main container
-        main_frame = tk.Frame(self.root, bg='#0a0a0a', relief='flat')
-        main_frame.pack(fill='both', expand=True, padx=2, pady=2)
+        # Create main container with subtle border
+        main_frame = tk.Frame(self.root, bg='#0f0f23', relief='flat')
+        main_frame.pack(fill='both', expand=True, padx=3, pady=3)
         
         # Create header
         self.create_header(main_frame)
@@ -57,61 +59,70 @@ class ModernPopup:
         self.root.bind('<B1-Motion>', self.on_move)
         
     def create_header(self, parent):
-        """Create the header section"""
-        header_frame = tk.Frame(parent, bg='#1a1a1a', height=80, relief='flat')
+        """Create the enhanced header section"""
+        header_frame = tk.Frame(parent, bg='#1a1a2e', height=90, relief='flat')
         header_frame.pack(fill='x', padx=0, pady=0)
         header_frame.pack_propagate(False)
         
-        # App info (left side)
-        app_info_frame = tk.Frame(header_frame, bg='#1a1a1a')
-        app_info_frame.pack(side='left', padx=24, pady=16)
+        # Add subtle border effect
+        border_frame = tk.Frame(header_frame, bg='#16213e', height=2)
+        border_frame.pack(fill='x', side='bottom')
         
+        # App info (left side)
+        app_info_frame = tk.Frame(header_frame, bg='#1a1a2e')
+        app_info_frame.pack(side='left', padx=28, pady=20)
+        
+        # Enhanced title with gradient effect simulation
         title_label = tk.Label(app_info_frame, text="🎯 idIAmas", 
-                              font=('Segoe UI', 20, 'bold'), 
-                              fg='#ffffff', bg='#1a1a1a')
+                              font=('Segoe UI', 24, 'bold'), 
+                              fg='#00d4ff', bg='#1a1a2e')  # Bright cyan
         title_label.pack(anchor='w')
         
-        subtitle_label = tk.Label(app_info_frame, text="Traducción & Aprendizaje", 
+        subtitle_label = tk.Label(app_info_frame, text="Traducción & Aprendizaje Inteligente", 
                                  font=('Segoe UI', 14), 
-                                 fg='#888888', bg='#1a1a1a')
+                                 fg='#a8a8a8', bg='#1a1a2e')  # Softer gray
         subtitle_label.pack(anchor='w')
         
         # Right side elements
-        right_frame = tk.Frame(header_frame, bg='#1a1a1a')
-        right_frame.pack(side='right', padx=24, pady=16)
+        right_frame = tk.Frame(header_frame, bg='#1a1a2e')
+        right_frame.pack(side='right', padx=28, pady=20)
         
-        # Timestamp
+        # Enhanced timestamp with better styling
         timestamp_label = tk.Label(right_frame, text=time.strftime("%H:%M:%S"), 
-                                  font=('Segoe UI', 12), 
-                                  fg='#666666', bg='#1a1a1a')
+                                  font=('Segoe UI', 13, 'bold'), 
+                                  fg='#4ecdc4', bg='#1a1a2e')  # Teal color
         timestamp_label.pack(side='top')
         
-        # Close button
+        # Enhanced close button with hover effect
         close_btn = tk.Button(right_frame, text="✕", 
-                             font=('Segoe UI', 12, 'bold'),
-                             fg='#ffffff', bg='#ef4444', 
-                             activebackground='#dc2626',
+                             font=('Segoe UI', 14, 'bold'),
+                             fg='#ffffff', bg='#ff6b6b',  # Modern red
+                             activebackground='#ee5a52',
                              relief='flat', cursor='hand2',
                              command=self.close_popup)
         close_btn.configure(width=3, height=1)
         close_btn.pack(side='bottom')
         
+        # Add hover effect
+        close_btn.bind('<Enter>', lambda e: close_btn.configure(bg='#ff5252'))
+        close_btn.bind('<Leave>', lambda e: close_btn.configure(bg='#ff6b6b'))
+        
     def create_notebook(self, parent):
-        """Create the tabbed content area"""
+        """Create the enhanced tabbed content area"""
         # Create notebook with custom styling
         style = ttk.Style()
         style.theme_use('default')
         
-        # Configure notebook style
-        style.configure('Custom.TNotebook', background='#0a0a0a', borderwidth=0)
+        # Enhanced notebook style with better colors
+        style.configure('Custom.TNotebook', background='#0f0f23', borderwidth=0)
         style.configure('Custom.TNotebook.Tab', 
-                       background='#1a1a1a', 
-                       foreground='#888888',
-                       padding=[24, 12],
-                       font=('Segoe UI', 12, 'bold'))
+                       background='#1a1a2e', 
+                       foreground='#a8a8a8',
+                       padding=[28, 16],
+                       font=('Segoe UI', 13, 'bold'))
         style.map('Custom.TNotebook.Tab',
-                  background=[('selected', '#2d2d2d'), ('active', '#2d2d2d')],
-                  foreground=[('selected', '#ffffff'), ('active', '#cccccc')])
+                  background=[('selected', '#16213e'), ('active', '#1e1e3f')],
+                  foreground=[('selected', '#00d4ff'), ('active', '#4ecdc4')])
         
         # Create notebook
         self.notebook = ttk.Notebook(parent, style='Custom.TNotebook')
@@ -123,42 +134,51 @@ class ModernPopup:
         self.create_original_tab()
         
     def create_translation_tab(self):
-        """Create the translation tab"""
-        tab_frame = tk.Frame(self.notebook, bg='#0a0a0a')
+        """Create the enhanced translation tab"""
+        tab_frame = tk.Frame(self.notebook, bg='#0f0f23')
         self.notebook.add(tab_frame, text="🇪🇸 Traducción")
         
-        # Tab header
-        header_frame = tk.Frame(tab_frame, bg='#0a0a0a')
-        header_frame.pack(fill='x', padx=24, pady=24)
+        # Tab header with enhanced styling
+        header_frame = tk.Frame(tab_frame, bg='#0f0f23')
+        header_frame.pack(fill='x', padx=28, pady=28)
         
+        # Enhanced title with accent color
         title_label = tk.Label(header_frame, text="🇪🇸 Traducción", 
-                              font=('Segoe UI', 18, 'bold'), 
-                              fg='#3b82f6', bg='#0a0a0a')
+                              font=('Segoe UI', 20, 'bold'), 
+                              fg='#00d4ff', bg='#0f0f23')  # Bright cyan
         title_label.pack(side='left')
         
+        # Enhanced copy button with modern styling
         copy_btn = tk.Button(header_frame, text="📋 Copiar", 
-                            font=('Segoe UI', 12, 'bold'),
-                            fg='#ffffff', bg='#10b981', 
-                            activebackground='#059669',
+                            font=('Segoe UI', 13, 'bold'),
+                            fg='#ffffff', bg='#4ecdc4',  # Teal
+                            activebackground='#45b7aa',
                             relief='flat', cursor='hand2',
                             command=lambda: self.copy_to_clipboard(self.translation_data.get('translation', '')))
         copy_btn.pack(side='right')
         
-        # Content area
-        content_frame = tk.Frame(tab_frame, bg='#0a0a0a')
-        content_frame.pack(fill='both', expand=True, padx=24, pady=0)
+        # Add hover effect
+        copy_btn.bind('<Enter>', lambda e: copy_btn.configure(bg='#45b7aa'))
+        copy_btn.bind('<Leave>', lambda e: copy_btn.configure(bg='#4ecdc4'))
         
-        # Text widget with scrollbar
+        # Content area with enhanced styling
+        content_frame = tk.Frame(tab_frame, bg='#0f0f23')
+        content_frame.pack(fill='both', expand=True, padx=28, pady=0)
+        
+        # Enhanced text widget with better styling
         text_widget = tk.Text(content_frame, 
                              wrap='word', 
-                             bg='#1a1a1a', 
+                             bg='#1a1a2e',  # Darker background
                              fg='#ffffff',
-                             font=('Segoe UI', 14),
+                             font=('Segoe UI', 15),  # Larger font
                              relief='flat',
-                             borderwidth=1,
-                             padx=16, pady=16,
-                             state='disabled')
+                             borderwidth=0,
+                             padx=20, pady=20,
+                             state='disabled',
+                             selectbackground='#00d4ff',  # Cyan selection
+                             selectforeground='#000000')
         
+        # Enhanced scrollbar
         scrollbar = tk.Scrollbar(content_frame, orient='vertical', command=text_widget.yview)
         text_widget.configure(yscrollcommand=scrollbar.set)
         
@@ -171,41 +191,49 @@ class ModernPopup:
         text_widget.configure(state='disabled')
         
     def create_grammar_tab(self):
-        """Create the grammar tab"""
-        tab_frame = tk.Frame(self.notebook, bg='#0a0a0a')
+        """Create the enhanced grammar tab"""
+        tab_frame = tk.Frame(self.notebook, bg='#0f0f23')
         self.notebook.add(tab_frame, text="📚 Gramática")
         
-        # Tab header
-        header_frame = tk.Frame(tab_frame, bg='#0a0a0a')
-        header_frame.pack(fill='x', padx=24, pady=24)
+        # Tab header with enhanced styling
+        header_frame = tk.Frame(tab_frame, bg='#0f0f23')
+        header_frame.pack(fill='x', padx=28, pady=28)
         
+        # Enhanced title with accent color
         title_label = tk.Label(header_frame, text="📚 Gramática", 
-                              font=('Segoe UI', 18, 'bold'), 
-                              fg='#10b981', bg='#0a0a0a')
+                              font=('Segoe UI', 20, 'bold'), 
+                              fg='#4ecdc4', bg='#0f0f23')  # Teal
         title_label.pack(side='left')
         
+        # Enhanced copy button
         copy_btn = tk.Button(header_frame, text="📋 Copiar", 
-                            font=('Segoe UI', 12, 'bold'),
-                            fg='#ffffff', bg='#10b981', 
-                            activebackground='#059669',
+                            font=('Segoe UI', 13, 'bold'),
+                            fg='#ffffff', bg='#4ecdc4', 
+                            activebackground='#45b7aa',
                             relief='flat', cursor='hand2',
                             command=lambda: self.copy_to_clipboard(self.translation_data.get('grammar', '')))
         copy_btn.pack(side='right')
         
-        # Content area
-        content_frame = tk.Frame(tab_frame, bg='#0a0a0a')
-        content_frame.pack(fill='both', expand=True, padx=24, pady=0)
+        # Add hover effect
+        copy_btn.bind('<Enter>', lambda e: copy_btn.configure(bg='#45b7aa'))
+        copy_btn.bind('<Leave>', lambda e: copy_btn.configure(bg='#4ecdc4'))
         
-        # Text widget with scrollbar
+        # Content area with enhanced styling
+        content_frame = tk.Frame(tab_frame, bg='#0f0f23')
+        content_frame.pack(fill='both', expand=True, padx=28, pady=0)
+        
+        # Enhanced text widget
         text_widget = tk.Text(content_frame, 
                              wrap='word', 
-                             bg='#1a1a1a', 
+                             bg='#1a1a2e',
                              fg='#ffffff',
-                             font=('Segoe UI', 14),
+                             font=('Segoe UI', 15),
                              relief='flat',
-                             borderwidth=1,
-                             padx=16, pady=16,
-                             state='disabled')
+                             borderwidth=0,
+                             padx=20, pady=20,
+                             state='disabled',
+                             selectbackground='#4ecdc4',
+                             selectforeground='#000000')
         
         scrollbar = tk.Scrollbar(content_frame, orient='vertical', command=text_widget.yview)
         text_widget.configure(yscrollcommand=scrollbar.set)
@@ -219,41 +247,49 @@ class ModernPopup:
         text_widget.configure(state='disabled')
         
     def create_original_tab(self):
-        """Create the original text tab"""
-        tab_frame = tk.Frame(self.notebook, bg='#0a0a0a')
+        """Create the enhanced original text tab"""
+        tab_frame = tk.Frame(self.notebook, bg='#0f0f23')
         self.notebook.add(tab_frame, text="🇮🇹 Original")
         
-        # Tab header
-        header_frame = tk.Frame(tab_frame, bg='#0a0a0a')
-        header_frame.pack(fill='x', padx=24, pady=24)
+        # Tab header with enhanced styling
+        header_frame = tk.Frame(tab_frame, bg='#0f0f23')
+        header_frame.pack(fill='x', padx=28, pady=28)
         
+        # Enhanced title with accent color
         title_label = tk.Label(header_frame, text="🇮🇹 Original", 
-                              font=('Segoe UI', 18, 'bold'), 
-                              fg='#f59e0b', bg='#0a0a0a')
+                              font=('Segoe UI', 20, 'bold'), 
+                              fg='#ffa726', bg='#0f0f23')  # Orange
         title_label.pack(side='left')
         
+        # Enhanced copy button
         copy_btn = tk.Button(header_frame, text="📋 Copiar", 
-                            font=('Segoe UI', 12, 'bold'),
-                            fg='#ffffff', bg='#10b981', 
-                            activebackground='#059669',
+                            font=('Segoe UI', 13, 'bold'),
+                            fg='#ffffff', bg='#4ecdc4', 
+                            activebackground='#45b7aa',
                             relief='flat', cursor='hand2',
                             command=lambda: self.copy_to_clipboard(self.translation_data.get('original', '')))
         copy_btn.pack(side='right')
         
-        # Content area
-        content_frame = tk.Frame(tab_frame, bg='#0a0a0a')
-        content_frame.pack(fill='both', expand=True, padx=24, pady=0)
+        # Add hover effect
+        copy_btn.bind('<Enter>', lambda e: copy_btn.configure(bg='#45b7aa'))
+        copy_btn.bind('<Leave>', lambda e: copy_btn.configure(bg='#4ecdc4'))
         
-        # Text widget with scrollbar
+        # Content area with enhanced styling
+        content_frame = tk.Frame(tab_frame, bg='#0f0f23')
+        content_frame.pack(fill='both', expand=True, padx=28, pady=0)
+        
+        # Enhanced text widget
         text_widget = tk.Text(content_frame, 
                              wrap='word', 
-                             bg='#1a1a1a', 
+                             bg='#1a1a2e',
                              fg='#ffffff',
-                             font=('Segoe UI', 14),
+                             font=('Segoe UI', 15),
                              relief='flat',
-                             borderwidth=1,
-                             padx=16, pady=16,
-                             state='disabled')
+                             borderwidth=0,
+                             padx=20, pady=20,
+                             state='disabled',
+                             selectbackground='#ffa726',
+                             selectforeground='#000000')
         
         scrollbar = tk.Scrollbar(content_frame, orient='vertical', command=text_widget.yview)
         text_widget.configure(yscrollcommand=scrollbar.set)
@@ -267,22 +303,26 @@ class ModernPopup:
         text_widget.configure(state='disabled')
         
     def create_footer(self, parent):
-        """Create the footer section"""
-        footer_frame = tk.Frame(parent, bg='#1a1a1a', height=60, relief='flat')
+        """Create the enhanced footer section"""
+        footer_frame = tk.Frame(parent, bg='#1a1a2e', height=70, relief='flat')
         footer_frame.pack(fill='x', padx=0, pady=0)
         footer_frame.pack_propagate(False)
         
-        # Instructions (left side)
-        instructions_label = tk.Label(footer_frame, text="Presiona 'i' para traducir, 'q' para salir", 
-                                     font=('Segoe UI', 12), 
-                                     fg='#666666', bg='#1a1a1a')
-        instructions_label.pack(side='left', padx=24, pady=12)
+        # Add subtle border effect
+        border_frame = tk.Frame(footer_frame, bg='#16213e', height=2)
+        border_frame.pack(fill='x', side='top')
         
-        # Status (right side)
+        # Instructions (left side) with enhanced styling
+        instructions_label = tk.Label(footer_frame, text="Presiona 'i' para traducir, 'q' para salir", 
+                                     font=('Segoe UI', 13), 
+                                     fg='#a8a8a8', bg='#1a1a2e')
+        instructions_label.pack(side='left', padx=28, pady=16)
+        
+        # Status (right side) with enhanced styling
         status_label = tk.Label(footer_frame, text="🎯 Aprendiendo Italiano", 
-                               font=('Segoe UI', 12), 
-                               fg='#666666', bg='#1a1a1a')
-        status_label.pack(side='right', padx=24, pady=12)
+                               font=('Segoe UI', 13, 'bold'), 
+                               fg='#4ecdc4', bg='#1a1a2e')  # Teal accent
+        status_label.pack(side='right', padx=28, pady=16)
         
     def center_window(self):
         """Center the window on the screen"""
@@ -315,10 +355,11 @@ class ModernPopup:
         self.show_copy_feedback()
         
     def show_copy_feedback(self):
-        """Show visual feedback for copy action"""
+        """Show enhanced visual feedback for copy action"""
+        # Create a modern feedback label
         feedback_label = tk.Label(self.root, text="¡Copiado! ✓", 
-                                 font=('Segoe UI', 12, 'bold'),
-                                 fg='#ffffff', bg='#10b981',
+                                 font=('Segoe UI', 14, 'bold'),
+                                 fg='#ffffff', bg='#4ecdc4',
                                  relief='flat')
         feedback_label.place(relx=0.5, rely=0.5, anchor='center')
         
@@ -328,6 +369,7 @@ class ModernPopup:
     def close_popup(self):
         """Close the popup"""
         if self.root:
+            self.root.quit()
             self.root.destroy()
             self.root = None
             
@@ -337,18 +379,34 @@ class ModernPopup:
             self.root.deiconify()
             self.root.lift()
             self.root.focus_force()
+            
+    def run(self):
+        """Run the popup in its own event loop"""
+        if self.root:
+            self.root.mainloop()
+
+# Global popup manager
+_popup_manager = None
 
 def mostrar_explicacion_moderna(texto: str):
     """Main function to display translation results in the modern popup"""
+    global _popup_manager
+    
     # Parse the AI response
     sections = parse_ai_response(texto)
     
-    # Create and show the popup
-    popup = ModernPopup(sections)
-    popup.show()
+    # Create popup in a separate thread to avoid blocking
+    def create_popup():
+        popup = ModernPopup(sections)
+        popup.show()
+        popup.run()
     
-    # Return the popup instance
-    return popup
+    # Start popup in background thread
+    popup_thread = threading.Thread(target=create_popup, daemon=True)
+    popup_thread.start()
+    
+    # Return immediately so main app continues
+    return None
 
 def parse_ai_response(texto: str) -> dict:
     """Parse the AI response into structured sections"""
@@ -384,7 +442,7 @@ def parse_ai_response(texto: str) -> dict:
     return sections
 
 if __name__ == "__main__":
-    # Test the modern popup
+    # Test the enhanced modern popup
     test_text = """
     TEXTO ORIGINAL:
     Ciao, come stai?
@@ -400,6 +458,6 @@ if __name__ == "__main__":
     
     popup = mostrar_explicacion_moderna(test_text)
     
-    # For testing, run the main loop
-    if popup.root:
-        popup.root.mainloop()
+    # For testing, we can wait a bit to see the popup
+    import time
+    time.sleep(5)

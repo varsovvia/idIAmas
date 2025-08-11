@@ -11,12 +11,12 @@ import os
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QScrollArea, QLabel, QPushButton, QTabWidget, QFrame, QTextEdit,
-    QShortcut, QGraphicsDropShadowEffect
+    QGraphicsDropShadowEffect
 )
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QPropertyAnimation, QEasingCurve
 from PyQt6.QtGui import (
     QPainter, QLinearGradient, QColor, QPalette, QBrush, QPen,
-    QKeySequence, QFont, QPixmap
+    QKeySequence, QFont, QPixmap, QShortcut
 )
 
 

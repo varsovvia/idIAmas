@@ -85,9 +85,7 @@ def create_extensive_test_data():
 
 def main():
     """Test the fade overlay with extensive content"""
-    # Enable high DPI support
-    QApplication.setAttribute(QApplication.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
-    
+    # Qt6 handles high DPI support automatically
     app = QApplication(sys.argv)
     
     # Create popup with extensive test data

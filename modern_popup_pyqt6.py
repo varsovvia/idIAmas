@@ -1381,8 +1381,7 @@ def show_modern_popup(texto: str):
         if app is None:
             print("📱 Creating new QApplication...")
             app = QApplication(sys.argv)
-            # Enable high DPI support
-            app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
+            # Qt6 handles high DPI support automatically
         else:
             print("📱 Using existing QApplication...")
         

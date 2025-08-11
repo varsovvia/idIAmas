@@ -650,9 +650,7 @@ def create_sample_data():
 
 def main():
     """Main function for testing the popup"""
-    # Enable high DPI support
-    QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
-    
+    # Enable high DPI support (Qt6 handles high DPI automatically)
     app = QApplication(sys.argv)
     
     # Create and show popup with sample data

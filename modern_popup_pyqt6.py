@@ -1460,9 +1460,12 @@ finally:
             script_file = f.name
         
         if sys.platform == 'win32':
-            # Create new console but allow popup to show above other windows
+            # Hide console window but allow popup to show
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startupinfo.wShowWindow = subprocess.SW_HIDE
             process = subprocess.Popen([sys.executable, script_file], 
-                                     creationflags=subprocess.CREATE_NEW_CONSOLE)
+                                     startupinfo=startupinfo)
         else:
             process = subprocess.Popen([sys.executable, script_file])
         

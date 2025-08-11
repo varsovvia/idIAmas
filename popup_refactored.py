@@ -85,7 +85,7 @@ class FadeOverlay(QWidget):
             return QColor(248, 249, 250, 255), QColor(248, 249, 250, 0)
     
     def paintEvent(self, event):
-        """Paint gradient fade overlays on all sides"""
+        """Paint inward-facing gradient fade overlays (vignette effect)"""
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
@@ -98,46 +98,46 @@ class FadeOverlay(QWidget):
         rect = self.rect()
         fade_size = self.fade_height
         
-        # Create gradients for all four sides
+        # Create inward-facing gradients (vignette effect)
         
-        # Top gradient (fade from transparent to background)
+        # Top gradient (fade FROM edge TO center)
         if self.should_show_top_fade():
             top_gradient = QLinearGradient(0, 0, 0, fade_size)
-            top_gradient.setColorAt(0.0, bg_opaque)  # Top: opaque background
+            top_gradient.setColorAt(0.0, bg_opaque)  # Edge: opaque background
             top_gradient.setColorAt(0.3, QColor(bg_opaque.red(), bg_opaque.green(), bg_opaque.blue(), 204))
             top_gradient.setColorAt(0.7, QColor(bg_opaque.red(), bg_opaque.green(), bg_opaque.blue(), 77))
-            top_gradient.setColorAt(1.0, bg_transparent)  # Bottom: transparent
+            top_gradient.setColorAt(1.0, bg_transparent)  # Center: transparent
             
             top_rect = rect
             top_rect.setHeight(fade_size)
             painter.fillRect(top_rect, QBrush(top_gradient))
         
-        # Bottom gradient (fade from transparent to background)
-        bottom_gradient = QLinearGradient(0, rect.height() - fade_size, 0, rect.height())
-        bottom_gradient.setColorAt(0.0, bg_transparent)  # Top: transparent
-        bottom_gradient.setColorAt(0.3, QColor(bg_opaque.red(), bg_opaque.green(), bg_opaque.blue(), 77))
-        bottom_gradient.setColorAt(0.7, QColor(bg_opaque.red(), bg_opaque.green(), bg_opaque.blue(), 204))
-        bottom_gradient.setColorAt(1.0, bg_opaque)  # Bottom: opaque background
+        # Bottom gradient (fade FROM edge TO center)
+        bottom_gradient = QLinearGradient(0, rect.height(), 0, rect.height() - fade_size)
+        bottom_gradient.setColorAt(0.0, bg_opaque)  # Edge: opaque background
+        bottom_gradient.setColorAt(0.3, QColor(bg_opaque.red(), bg_opaque.green(), bg_opaque.blue(), 204))
+        bottom_gradient.setColorAt(0.7, QColor(bg_opaque.red(), bg_opaque.green(), bg_opaque.blue(), 77))
+        bottom_gradient.setColorAt(1.0, bg_transparent)  # Center: transparent
         
         bottom_rect = rect
         bottom_rect.setTop(rect.height() - fade_size)
         painter.fillRect(bottom_rect, QBrush(bottom_gradient))
         
-        # Left gradient
+        # Left gradient (fade FROM edge TO center)
         left_gradient = QLinearGradient(0, 0, fade_size // 2, 0)
-        left_gradient.setColorAt(0.0, bg_opaque)  # Left: opaque background
+        left_gradient.setColorAt(0.0, bg_opaque)  # Edge: opaque background
         left_gradient.setColorAt(0.5, QColor(bg_opaque.red(), bg_opaque.green(), bg_opaque.blue(), 128))
-        left_gradient.setColorAt(1.0, bg_transparent)  # Right: transparent
+        left_gradient.setColorAt(1.0, bg_transparent)  # Center: transparent
         
         left_rect = rect
         left_rect.setWidth(fade_size // 2)
         painter.fillRect(left_rect, QBrush(left_gradient))
         
-        # Right gradient
-        right_gradient = QLinearGradient(rect.width() - fade_size // 2, 0, rect.width(), 0)
-        right_gradient.setColorAt(0.0, bg_transparent)  # Left: transparent
+        # Right gradient (fade FROM edge TO center)
+        right_gradient = QLinearGradient(rect.width(), 0, rect.width() - fade_size // 2, 0)
+        right_gradient.setColorAt(0.0, bg_opaque)  # Edge: opaque background
         right_gradient.setColorAt(0.5, QColor(bg_opaque.red(), bg_opaque.green(), bg_opaque.blue(), 128))
-        right_gradient.setColorAt(1.0, bg_opaque)  # Right: opaque background
+        right_gradient.setColorAt(1.0, bg_transparent)  # Center: transparent
         
         right_rect = rect
         right_rect.setLeft(rect.width() - fade_size // 2)
@@ -150,12 +150,16 @@ class FadeOverlay(QWidget):
 
 
 class GrammarCard(QWidget):
-    """Individual card widget for grammar explanations"""
+    """Individual card widget for grammar explanations with hover animations"""
     
     def __init__(self, word_data: dict):
         super().__init__()
         self.word_data = word_data
+        self.shine_animation = None
+        self.hover_animation = None
+        self.is_hovered = False
         self.setup_card()
+        self.setup_animations()
     
     def setup_card(self):
         """Setup card appearance and content"""
@@ -182,6 +186,85 @@ class GrammarCard(QWidget):
         explanation_label.setObjectName("grammarExplanation")
         explanation_label.setWordWrap(True)
         layout.addWidget(explanation_label)
+    
+    def setup_animations(self):
+        """Setup hover and shine animations"""
+        from PyQt6.QtCore import QPropertyAnimation, QEasingCurve, QParallelAnimationGroup
+        from PyQt6.QtWidgets import QGraphicsOpacityEffect
+        
+        # Create opacity effect for hover animation
+        self.opacity_effect = QGraphicsOpacityEffect()
+        self.setGraphicsEffect(self.opacity_effect)
+        
+        # Hover animation
+        self.hover_animation = QPropertyAnimation(self.opacity_effect, b"opacity")
+        self.hover_animation.setDuration(200)
+        self.hover_animation.setEasingCurve(QEasingCurve.Type.InOutQuad)
+    
+    def enterEvent(self, event):
+        """Handle mouse enter - start hover animation"""
+        super().enterEvent(event)
+        self.is_hovered = True
+        
+        if self.hover_animation:
+            self.hover_animation.stop()
+            self.hover_animation.setStartValue(0.8)
+            self.hover_animation.setEndValue(1.0)
+            self.hover_animation.start()
+        
+        # Trigger shine effect
+        self.start_shine_effect()
+    
+    def leaveEvent(self, event):
+        """Handle mouse leave - reverse hover animation"""
+        super().leaveEvent(event)
+        self.is_hovered = False
+        
+        if self.hover_animation:
+            self.hover_animation.stop()
+            self.hover_animation.setStartValue(1.0)
+            self.hover_animation.setEndValue(0.8)
+            self.hover_animation.start()
+    
+    def start_shine_effect(self):
+        """Start a subtle shine animation across the card"""
+        if not self.is_hovered:
+            return
+            
+        # Create a shine timer for periodic effect
+        from PyQt6.QtCore import QTimer
+        
+        def create_shine():
+            if self.is_hovered:  # Only shine if still hovered
+                self.update()  # Trigger repaint for shine
+                
+        if not hasattr(self, 'shine_timer'):
+            self.shine_timer = QTimer()
+            self.shine_timer.timeout.connect(create_shine)
+            self.shine_timer.setSingleShot(True)
+            
+        self.shine_timer.start(100)  # Delay shine slightly
+    
+    def paintEvent(self, event):
+        """Custom paint event with shine effect"""
+        super().paintEvent(event)
+        
+        if self.is_hovered:
+            from PyQt6.QtGui import QPainter, QLinearGradient, QBrush
+            
+            painter = QPainter(self)
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+            
+            # Create subtle shine gradient
+            shine_gradient = QLinearGradient(0, 0, self.width(), 0)
+            shine_gradient.setColorAt(0.0, QColor(255, 255, 255, 0))
+            shine_gradient.setColorAt(0.3, QColor(0, 212, 255, 30))  # Cyan shine
+            shine_gradient.setColorAt(0.7, QColor(0, 212, 255, 30))
+            shine_gradient.setColorAt(1.0, QColor(255, 255, 255, 0))
+            
+            # Paint shine effect
+            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Overlay)
+            painter.fillRect(self.rect(), QBrush(shine_gradient))
 
 
 class PopupWindow(QMainWindow):
@@ -526,12 +609,19 @@ class PopupWindow(QMainWindow):
             color: {text_secondary};
             font-size: 18px;
             font-weight: bold;
+            transition: all 0.2s ease-in-out;
         }}
         
         #closeButton:hover {{
-            background: rgba(255, 0, 0, 0.1);
+            background: rgba(255, 0, 0, 0.15);
             border: none;
             color: #ff6b6b;
+            transform: rotate(90deg) scale(1.1);
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+        }}
+        
+        #closeButton:pressed {{
+            transform: rotate(90deg) scale(0.95);
         }}
         
         #mainTabs {{
@@ -557,12 +647,20 @@ class PopupWindow(QMainWindow):
             border-top-left-radius: 8px;
             border-top-right-radius: 8px;
             color: {text_secondary};
+            transition: all 0.2s ease-in-out;
+        }}
+        
+        #mainTabs QTabBar::tab:hover {{
+            background: rgba(0, 212, 255, 0.1);
+            color: {accent_color};
+            transform: scale(1.02);
         }}
         
         #mainTabs QTabBar::tab:selected {{
             background: {bg_primary};
             color: {accent_color};
             border: none;
+            box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
         }}
         
         #textDisplay {{
@@ -584,11 +682,14 @@ class PopupWindow(QMainWindow):
             border: none;
             border-radius: 8px;
             margin-bottom: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
         }}
         
         #grammarCard:hover {{
-            background: rgba(0, 212, 255, 0.05);
+            background: rgba(0, 212, 255, 0.1);
             border: none;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.2);
         }}
         
         #wordTitle {{
@@ -632,26 +733,42 @@ class PopupWindow(QMainWindow):
             border-radius: 6px;
             padding: 6px 12px;
             font-weight: 600;
+            transition: all 0.25s cubic-bezier(0.4, 0.0, 0.2, 1);
         }}
         
         #copyButton:hover {{
-            background: rgba(0, 212, 255, 0.8);
+            background: rgba(0, 212, 255, 0.9);
+            transform: translateY(-1px) scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+        }}
+        
+        #copyButton:pressed {{
+            transform: translateY(0px) scale(0.98);
+            box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
         }}
         
         QScrollBar:vertical {{
             background: {bg_secondary};
             width: 8px;
             border-radius: 4px;
+            transition: all 0.2s ease-in-out;
         }}
         
         QScrollBar::handle:vertical {{
             background: {border_color};
             border-radius: 4px;
             min-height: 20px;
+            transition: all 0.2s ease-in-out;
         }}
         
         QScrollBar::handle:vertical:hover {{
             background: {accent_color};
+            width: 10px;
+            box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
+        }}
+        
+        QScrollBar::handle:vertical:pressed {{
+            background: rgba(0, 212, 255, 0.8);
         }}
         """
         

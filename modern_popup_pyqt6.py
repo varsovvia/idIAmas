@@ -1323,9 +1323,79 @@ if __name__ == "__main__":
     - stai: second person of the verb 'stare' (to be/stay)
     """
     
+    # Import new popup implementation
+    try:
+        from popup_refactored import PopupWindow
+        USE_NEW_POPUP = True
+    except ImportError:
+        USE_NEW_POPUP = False
+        print("⚠️ New popup implementation not found, using old implementation")
+    
     # Create QApplication and show popup
     app = QApplication(sys.argv)
-    popup = mostrar_explicacion_moderna_pyqt6(test_text)
+    
+    if USE_NEW_POPUP:
+        sections = parse_ai_response(test_text)
+        popup = PopupWindow(sections)
+        popup.show()
+    else:
+        popup = mostrar_explicacion_moderna_pyqt6(test_text)
     
     # Run the event loop
     app.exec()
+
+
+def show_modern_popup(texto: str):
+    """
+    New main function to display translation results using the refactored PopupWindow.
+    Uses the modern, professional implementation with proper fade overlay.
+    """
+    global _active_popup_processes, _last_popup_time
+    
+    # Import new popup implementation
+    try:
+        from popup_refactored import PopupWindow
+        use_new_popup = True
+    except ImportError:
+        use_new_popup = False
+        print("⚠️ New popup implementation not found, using old implementation")
+        return mostrar_explicacion_moderna_pyqt6(texto)
+    
+    # Prevent rapid-fire popups (wait at least 2 seconds between popups)
+    import time
+    current_time = time.time()
+    if current_time - _last_popup_time < 2.0:
+        print("⏰ Popup request too soon, ignoring...")
+        return None
+    _last_popup_time = current_time
+    
+    print("🚀 Starting modern popup display...")
+    
+    try:
+        # Parse the AI response
+        sections = parse_ai_response(texto)
+        print(f"📄 Parsed sections: {list(sections.keys())}")
+        
+        # Check if QApplication exists
+        app = QApplication.instance()
+        if app is None:
+            print("📱 Creating new QApplication...")
+            app = QApplication(sys.argv)
+            # Enable high DPI support
+            app.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
+        else:
+            print("📱 Using existing QApplication...")
+        
+        # Create and show new popup
+        popup = PopupWindow(sections)
+        popup.show()
+        popup.raise_()
+        popup.activateWindow()
+        
+        print("✅ Modern popup created successfully!")
+        return popup
+        
+    except Exception as error:
+        print(f"❌ Error creating modern popup: {error}")
+        print("🔄 Falling back to old implementation...")
+        return mostrar_explicacion_moderna_pyqt6(texto)

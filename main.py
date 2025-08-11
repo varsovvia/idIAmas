@@ -4,7 +4,7 @@ from PIL import Image
 from openai import OpenAI
 from pynput import keyboard
 
-from modern_popup_pyqt6 import mostrar_explicacion_moderna_pyqt6
+from modern_popup_pyqt6 import show_modern_popup
 from utilidades import save_image
 import time
 import os
@@ -191,7 +191,7 @@ class SubtitleTranslator:
             logger.info(f"Translation workflow completed in {total_time:.2f} seconds")
             
             # Show results in modern desktop popup
-            mostrar_explicacion_moderna_pyqt6(translation)
+            show_modern_popup(translation)
             save_image(imagen)
             
             return True

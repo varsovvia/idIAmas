@@ -190,27 +190,41 @@ class GrammarCard(QWidget):
     def setup_animations(self):
         """Setup hover and shine animations"""
         from PyQt6.QtCore import QPropertyAnimation, QEasingCurve, QParallelAnimationGroup
-        from PyQt6.QtWidgets import QGraphicsOpacityEffect
+        from PyQt6.QtWidgets import QGraphicsOpacityEffect, QGraphicsDropShadowEffect
         
-        # Create opacity effect for hover animation
-        self.opacity_effect = QGraphicsOpacityEffect()
-        self.setGraphicsEffect(self.opacity_effect)
+        # Create shadow effect for hover glow
+        self.shadow_effect = QGraphicsDropShadowEffect()
+        self.shadow_effect.setBlurRadius(0)
+        self.shadow_effect.setColor(QColor(0, 212, 255, 0))
+        self.shadow_effect.setOffset(0, 2)
+        self.setGraphicsEffect(self.shadow_effect)
         
-        # Hover animation
-        self.hover_animation = QPropertyAnimation(self.opacity_effect, b"opacity")
-        self.hover_animation.setDuration(200)
-        self.hover_animation.setEasingCurve(QEasingCurve.Type.InOutQuad)
+        # Hover animations
+        self.shadow_animation = QPropertyAnimation(self.shadow_effect, b"blurRadius")
+        self.shadow_animation.setDuration(250)
+        self.shadow_animation.setEasingCurve(QEasingCurve.Type.OutCubic)
+        
+        self.color_animation = QPropertyAnimation(self.shadow_effect, b"color")
+        self.color_animation.setDuration(250)
+        self.color_animation.setEasingCurve(QEasingCurve.Type.OutCubic)
     
     def enterEvent(self, event):
         """Handle mouse enter - start hover animation"""
         super().enterEvent(event)
         self.is_hovered = True
         
-        if self.hover_animation:
-            self.hover_animation.stop()
-            self.hover_animation.setStartValue(0.8)
-            self.hover_animation.setEndValue(1.0)
-            self.hover_animation.start()
+        # Start glow effect
+        if self.shadow_animation:
+            self.shadow_animation.stop()
+            self.shadow_animation.setStartValue(0)
+            self.shadow_animation.setEndValue(15)
+            self.shadow_animation.start()
+        
+        if self.color_animation:
+            self.color_animation.stop()
+            self.color_animation.setStartValue(QColor(0, 212, 255, 0))
+            self.color_animation.setEndValue(QColor(0, 212, 255, 80))
+            self.color_animation.start()
         
         # Trigger shine effect
         self.start_shine_effect()
@@ -220,11 +234,18 @@ class GrammarCard(QWidget):
         super().leaveEvent(event)
         self.is_hovered = False
         
-        if self.hover_animation:
-            self.hover_animation.stop()
-            self.hover_animation.setStartValue(1.0)
-            self.hover_animation.setEndValue(0.8)
-            self.hover_animation.start()
+        # Stop glow effect
+        if self.shadow_animation:
+            self.shadow_animation.stop()
+            self.shadow_animation.setStartValue(15)
+            self.shadow_animation.setEndValue(0)
+            self.shadow_animation.start()
+        
+        if self.color_animation:
+            self.color_animation.stop()
+            self.color_animation.setStartValue(QColor(0, 212, 255, 80))
+            self.color_animation.setEndValue(QColor(0, 212, 255, 0))
+            self.color_animation.start()
     
     def start_shine_effect(self):
         """Start a subtle shine animation across the card"""
@@ -609,19 +630,16 @@ class PopupWindow(QMainWindow):
             color: {text_secondary};
             font-size: 18px;
             font-weight: bold;
-            transition: all 0.2s ease-in-out;
         }}
         
         #closeButton:hover {{
             background: rgba(255, 0, 0, 0.15);
             border: none;
             color: #ff6b6b;
-            transform: rotate(90deg) scale(1.1);
-            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
         }}
         
         #closeButton:pressed {{
-            transform: rotate(90deg) scale(0.95);
+            background: rgba(255, 0, 0, 0.25);
         }}
         
         #mainTabs {{
@@ -647,20 +665,17 @@ class PopupWindow(QMainWindow):
             border-top-left-radius: 8px;
             border-top-right-radius: 8px;
             color: {text_secondary};
-            transition: all 0.2s ease-in-out;
         }}
         
         #mainTabs QTabBar::tab:hover {{
             background: rgba(0, 212, 255, 0.1);
             color: {accent_color};
-            transform: scale(1.02);
         }}
         
         #mainTabs QTabBar::tab:selected {{
             background: {bg_primary};
             color: {accent_color};
             border: none;
-            box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
         }}
         
         #textDisplay {{
@@ -682,14 +697,11 @@ class PopupWindow(QMainWindow):
             border: none;
             border-radius: 8px;
             margin-bottom: 8px;
-            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
         }}
         
         #grammarCard:hover {{
             background: rgba(0, 212, 255, 0.1);
             border: none;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.2);
         }}
         
         #wordTitle {{
@@ -733,38 +745,30 @@ class PopupWindow(QMainWindow):
             border-radius: 6px;
             padding: 6px 12px;
             font-weight: 600;
-            transition: all 0.25s cubic-bezier(0.4, 0.0, 0.2, 1);
         }}
         
         #copyButton:hover {{
             background: rgba(0, 212, 255, 0.9);
-            transform: translateY(-1px) scale(1.05);
-            box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
         }}
         
         #copyButton:pressed {{
-            transform: translateY(0px) scale(0.98);
-            box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
+            background: rgba(0, 212, 255, 0.7);
         }}
         
         QScrollBar:vertical {{
             background: {bg_secondary};
             width: 8px;
             border-radius: 4px;
-            transition: all 0.2s ease-in-out;
         }}
         
         QScrollBar::handle:vertical {{
             background: {border_color};
             border-radius: 4px;
             min-height: 20px;
-            transition: all 0.2s ease-in-out;
         }}
         
         QScrollBar::handle:vertical:hover {{
             background: {accent_color};
-            width: 10px;
-            box-shadow: 0 2px 8px rgba(0, 212, 255, 0.3);
         }}
         
         QScrollBar::handle:vertical:pressed {{

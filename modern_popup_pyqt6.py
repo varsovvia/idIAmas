@@ -1399,6 +1399,7 @@ def _create_modern_subprocess_popup(sections: dict):
         import json
         import tempfile
         import os
+        import uuid
         
         # Create a temporary file with the translation data
         with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False, encoding='utf-8') as f:

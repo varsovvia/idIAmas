@@ -165,8 +165,8 @@ class ModernPyQt6Popup(QMainWindow):
         # Ensure the window is visible and active
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating, False)
         
-        # Set window size and position
-        self.resize(1000, 750)
+        # Set window size and position - make it shorter
+        self.resize(900, 600)
         self.center_on_screen()
         
         # Apply premium futuristic styling
@@ -305,18 +305,40 @@ class ModernPyQt6Popup(QMainWindow):
                 font-family: 'Segoe UI', 'Inter', Arial, sans-serif;
             }}
             
-            QLabel#title {{
-                font-size: 32px;
-                font-weight: 800;
+            QLabel#titlePrefix {{
+                font-size: 28px;
+                font-weight: 300;
+                color: {StyleManager.COLORS['text_primary']};
+                letter-spacing: 1px;
+                margin: 0px;
+                padding: 0px;
+            }}
+            
+            QLabel#titleAccent {{
+                font-size: 28px;
+                font-weight: 900;
                 color: {StyleManager.COLORS['neon_cyan']};
                 letter-spacing: 1px;
+                margin: 0px;
+                padding: 0px;
+                text-shadow: 0px 0px 10px {StyleManager.COLORS['neon_cyan']};
+            }}
+            
+            QLabel#titleSuffix {{
+                font-size: 28px;
+                font-weight: 300;
+                color: {StyleManager.COLORS['text_primary']};
+                letter-spacing: 1px;
+                margin: 0px;
+                padding: 0px;
             }}
             
             QLabel#subtitle {{
-                font-size: 18px;
+                font-size: 14px;
                 color: {StyleManager.COLORS['text_secondary']};
                 font-weight: 400;
                 letter-spacing: 0.5px;
+                margin-top: 4px;
             }}
             
             QLabel#timestamp {{
@@ -394,7 +416,7 @@ class ModernPyQt6Popup(QMainWindow):
         """Create the enhanced header section with gradients"""
         header = QFrame()
         header.setObjectName("headerFrame")
-        header.setFixedHeight(100)
+        header.setFixedHeight(80)
         
         # Add shadow effect
         shadow = QGraphicsDropShadowEffect()
@@ -404,18 +426,35 @@ class ModernPyQt6Popup(QMainWindow):
         header.setGraphicsEffect(shadow)
         
         header_layout = QHBoxLayout(header)
-        header_layout.setContentsMargins(32, 24, 32, 24)
+        header_layout.setContentsMargins(24, 16, 24, 16)
         
-        # App info
+        # App info with cooler design
         app_info = QVBoxLayout()
         
-        title = QLabel("idIAmas")
-        title.setObjectName("title")
+        # Create a horizontal layout for the title with accent
+        title_layout = QHBoxLayout()
+        title_layout.setSpacing(0)  # No spacing between title parts
+        title_layout.setContentsMargins(0, 0, 0, 0)
         
-        subtitle = QLabel("Traducción & Aprendizaje Inteligente")
+        # Main title with modern styling
+        title = QLabel("id")
+        title.setObjectName("titlePrefix")
+        
+        title_accent = QLabel("IA")
+        title_accent.setObjectName("titleAccent")
+        
+        title_suffix = QLabel("mas")
+        title_suffix.setObjectName("titleSuffix")
+        
+        title_layout.addWidget(title)
+        title_layout.addWidget(title_accent)
+        title_layout.addWidget(title_suffix)
+        title_layout.addStretch()  # Push everything to the left
+        
+        subtitle = QLabel("AI-Powered Language Learning")
         subtitle.setObjectName("subtitle")
         
-        app_info.addWidget(title)
+        app_info.addLayout(title_layout)
         app_info.addWidget(subtitle)
         
         # Spacer
@@ -857,7 +896,7 @@ class ModernPyQt6Popup(QMainWindow):
         """Create the enhanced footer section"""
         footer = QFrame()
         footer.setObjectName("footerFrame")
-        footer.setFixedHeight(80)
+        footer.setFixedHeight(60)
         
         # Add shadow effect
         shadow = QGraphicsDropShadowEffect()

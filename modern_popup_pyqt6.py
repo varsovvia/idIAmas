@@ -256,46 +256,47 @@ class ModernPyQt6Popup(QMainWindow):
             }}
             
             QPushButton {{
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 {StyleManager.COLORS['neon_teal']}, 
-                    stop:1 rgba(69, 183, 170, 0.9));
-                color: white;
+                background: rgba(255, 255, 255, 0.08);
+                color: #4ecdc4;
                 border: 1px solid rgba(78, 205, 196, 0.3);
-                padding: 14px 28px;
-                border-radius: 14px;
-                font-weight: 600;
-                font-size: 15px;
+                padding: 8px 16px;
+                border-radius: 6px;
+                font-weight: 500;
+                font-size: 12px;
                 font-family: 'Segoe UI', 'Inter', Arial, sans-serif;
             }}
             
             QPushButton:hover {{
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 rgba(69, 183, 170, 1.0), 
-                    stop:1 rgba(61, 168, 156, 1.0));
-                border: 1px solid {StyleManager.COLORS['neon_teal']};
+                background: rgba(78, 205, 196, 0.15);
+                border: 1px solid rgba(78, 205, 196, 0.5);
+                color: #45b7aa;
             }}
             
             QPushButton:pressed {{
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 rgba(61, 168, 156, 1.0), 
-                    stop:1 rgba(53, 154, 143, 1.0));
+                background: rgba(78, 205, 196, 0.25);
+                transform: scale(0.98);
             }}
             
             QPushButton#closeBtn {{
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 {StyleManager.COLORS['neon_red']}, 
-                    stop:1 rgba(255, 82, 82, 0.9));
-                padding: 10px 18px;
-                font-size: 18px;
-                border-radius: 20px;
-                border: 1px solid rgba(255, 107, 107, 0.3);
+                background: rgba(255, 255, 255, 0.1);
+                color: #999;
+                font-size: 16px;
+                font-weight: bold;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 16px;
+                padding: 0px;
             }}
             
             QPushButton#closeBtn:hover {{
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-                    stop:0 rgba(255, 82, 82, 1.0), 
-                    stop:1 rgba(255, 68, 68, 1.0));
-                border: 1px solid {StyleManager.COLORS['neon_red']};
+                background: rgba(255, 70, 70, 0.8);
+                color: white;
+                border: 1px solid rgba(255, 70, 70, 1.0);
+                transform: scale(1.05);
+            }}
+            
+            QPushButton#closeBtn:pressed {{
+                background: rgba(200, 50, 50, 0.9);
+                transform: scale(0.95);
             }}
             
             QLabel {{
@@ -408,7 +409,7 @@ class ModernPyQt6Popup(QMainWindow):
         # App info
         app_info = QVBoxLayout()
         
-        title = QLabel("🎯 idIAmas")
+        title = QLabel("idIAmas")
         title.setObjectName("title")
         
         subtitle = QLabel("Traducción & Aprendizaje Inteligente")
@@ -425,11 +426,12 @@ class ModernPyQt6Popup(QMainWindow):
         timestamp = QLabel(time.strftime("%H:%M:%S"))
         timestamp.setObjectName("timestamp")
         
-        # Close button
-        close_btn = QPushButton("✕")
+        # Close button with professional styling
+        close_btn = QPushButton("×")
         close_btn.setObjectName("closeBtn")
-        close_btn.setFixedSize(40, 40)
+        close_btn.setFixedSize(32, 32)
         close_btn.clicked.connect(self.close)
+        close_btn.setToolTip("Close")
         
         header_layout.addLayout(app_info)
         header_layout.addWidget(spacer)
@@ -444,25 +446,25 @@ class ModernPyQt6Popup(QMainWindow):
         
         # Translation tab
         translation_tab = self.create_enhanced_content_tab(
-            "🇪🇸 Traducción", 
+            "ES | Traducción", 
             self.translation_data.get('translation', ''),
             "#00d4ff"
         )
-        self.tab_widget.addTab(translation_tab, "🇪🇸 Traducción")
+        self.tab_widget.addTab(translation_tab, "ES | Traducción")
         
         # Grammar tab (special handling for word-by-word breakdown)
         grammar_tab = self.create_grammar_tab(
             self.translation_data.get('grammar', '')
         )
-        self.tab_widget.addTab(grammar_tab, "📚 Gramática")
+        self.tab_widget.addTab(grammar_tab, "※ Gramática")
         
         # Original tab
         original_tab = self.create_enhanced_content_tab(
-            "🇮🇹 Original", 
+            "IT | Original", 
             self.translation_data.get('original', ''),
             "#ffa726"
         )
-        self.tab_widget.addTab(original_tab, "🇮🇹 Original")
+        self.tab_widget.addTab(original_tab, "IT | Original")
         
         parent_layout.addWidget(self.tab_widget)
         
@@ -488,8 +490,9 @@ class ModernPyQt6Popup(QMainWindow):
         """)
         
         # Copy button
-        copy_btn = QPushButton("📋 Copiar")
+        copy_btn = QPushButton("⧉ Copy")
         copy_btn.clicked.connect(lambda: self.copy_to_clipboard(content))
+        copy_btn.setToolTip("Copy to clipboard")
         
         header_layout.addWidget(title_label)
         header_layout.addStretch()
@@ -544,7 +547,7 @@ class ModernPyQt6Popup(QMainWindow):
         # Tab header
         header_layout = QHBoxLayout()
         
-        title_label = QLabel("📚 Gramática")
+        title_label = QLabel("※ Gramática")
         title_label.setObjectName("tabTitle")
         title_label.setStyleSheet(f"""
             QLabel#tabTitle {{
@@ -556,8 +559,9 @@ class ModernPyQt6Popup(QMainWindow):
         """)
         
         # Copy button
-        copy_btn = QPushButton("📋 Copiar")
+        copy_btn = QPushButton("⧉ Copy")
         copy_btn.clicked.connect(lambda: self.copy_to_clipboard(content))
+        copy_btn.setToolTip("Copy to clipboard")
         
         header_layout.addWidget(title_label)
         header_layout.addStretch()
@@ -785,11 +789,11 @@ class ModernPyQt6Popup(QMainWindow):
         footer_layout.setContentsMargins(32, 20, 32, 20)
         
         # Instructions
-        instructions = QLabel("Presiona 'i' para traducir, 'q' para salir")
+        instructions = QLabel("Press 'i' to translate, 'q' to exit")
         instructions.setStyleSheet("color: #a8a8a8; font-size: 14px;")
         
         # Status
-        status = QLabel("🎯 Aprendiendo Italiano")
+        status = QLabel("⬢ Learning Italian")
         status.setStyleSheet("color: #4ecdc4; font-size: 14px; font-weight: 600;")
         
         footer_layout.addWidget(instructions)

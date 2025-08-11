@@ -4,7 +4,7 @@ from PIL import Image
 from openai import OpenAI
 from pynput import keyboard
 import tkinter as tk
-from test_tinkter import mostrar_explicacion
+from modern_popup import mostrar_explicacion_moderna
 from utilidades import guardar_imagen
 import time
 import os
@@ -183,8 +183,8 @@ class SubtitleTranslator:
             total_time = time.time() - start_time
             logger.info(f"Translation workflow completed in {total_time:.2f} seconds")
             
-            # Show results
-            mostrar_explicacion(traduccion)
+            # Show results in modern desktop popup
+            mostrar_explicacion_moderna(traduccion)
             guardar_imagen(imagen)
             
             return True

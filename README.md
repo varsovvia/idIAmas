@@ -1,169 +1,177 @@
-# idIAmas - Italian Subtitle Translator & Language Learning Tool
+# 🎯 idIAmas - Italian Subtitle Translator & Language Learning
 
-A real-time Italian subtitle translation and language learning application that captures subtitles from your screen and provides detailed translations with grammatical explanations.
+A powerful, real-time Italian subtitle translator that helps you learn Italian while watching movies, TV shows, or any video content. **Now with a beautiful, modern desktop popup interface!**
 
-## Features
+## ✨ Features
 
-- **Real-time subtitle capture** from any video player
-- **AI-powered translation** using OpenAI GPT models
-- **Comprehensive language learning** with word-by-word explanations
-- **Grammar analysis** and educational content
-- **Hotkey activation** for seamless use while watching content
-- **Translation history** tracking
-- **Configurable screen regions** for different subtitle positions
+- **🎬 Real-time Subtitle Capture** - Automatically captures subtitles from your screen
+- **🤖 AI-Powered Translation** - Uses OpenAI GPT-3.5-turbo for accurate translations
+- **📚 Comprehensive Grammar Explanations** - Learn Italian grammar word by word
+- **🎨 Modern Desktop Popup** - Beautiful, professional interface that appears over your content
+- **⌨️ Hotkey Activation** - Press 'i' to translate, 'q' or 'Esc' to exit
+- **📱 Always on Top** - Popup stays visible while you continue watching
+- **📋 Copy to Clipboard** - Easy copying of translations and explanations
+- **🎯 Drag & Drop** - Move the popup anywhere on your screen
+- **🌙 Dark Theme** - Easy on the eyes for extended use
 
-## Security Improvements
-
-- ✅ **No hardcoded API keys** - uses environment variables
-- ✅ **Comprehensive error handling** throughout the application
-- ✅ **Input validation** and sanitization
-- ✅ **Logging system** for debugging and monitoring
-- ✅ **Graceful failure handling** for all operations
-
-## Installation
+## 🚀 Quick Start
 
 ### Prerequisites
 
 1. **Python 3.8+** installed on your system
-2. **Tesseract OCR** installed and accessible in your PATH
-3. **OpenAI API key** for translation services
+2. **Tesseract OCR** installed for text extraction
+3. **OpenAI API Key** for AI-powered translations
 
-### Install Tesseract OCR
+### Installation
 
-#### Windows:
-```bash
-# Download from: https://github.com/UB-Mannheim/tesseract/wiki
-# Or use chocolatey:
-choco install tesseract
-```
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/varsovvia/idIAmas.git
+   cd idIAmas
+   ```
 
-#### macOS:
-```bash
-brew install tesseract
-```
+2. **Install Python dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-#### Linux:
-```bash
-sudo apt-get install tesseract-ocr
-sudo apt-get install tesseract-ocr-ita  # Italian language pack
-```
+3. **Install Tesseract OCR:**
+   - **Windows:** Download from [UB-Mannheim](https://github.com/UB-Mannheim/tesseract/wiki)
+   - **macOS:** `brew install tesseract`
+   - **Linux:** `sudo apt install tesseract-ocr`
 
-### Install Python Dependencies
+4. **Configure your OpenAI API key:**
+   ```bash
+   python setup.py
+   ```
 
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Configure the Application
-
-**Easiest way - Use the setup wizard:**
-```bash
-python setup.py
-```
-
-This will guide you through:
-- Setting up your OpenAI API key
-- Configuring screen regions for subtitles
-- Setting language preferences
-- Creating the necessary configuration files
-
-## Configuration
-
-### 🚀 Quick Setup (Recommended)
-
-**Option 1: Setup Wizard**
-```bash
-python setup.py
-```
-This interactive wizard will guide you through the configuration process!
-
-**Option 2: Manual Configuration**
-
-Create a `.env` file in the project directory or set system environment variables:
-
-```bash
-# Required
-OPENAI_API_KEY=your_actual_api_key_here
-
-# Optional (with defaults)
-SUBTITLES_REGION=150,750,1520,330
-OPENAI_MODEL=gpt-3.5-turbo
-MAX_TOKENS=500
-TEMPERATURE=0.7
-OCR_LANGUAGE=ita
-IMAGE_THRESHOLD=200
-```
-
-### 2. Configure Screen Region
-
-The `SUBTITLES_REGION` format is `(x, y, width, height)`:
-- **x, y**: Top-left corner coordinates
-- **width, height**: Dimensions of the capture area
-
-Adjust these values based on your screen resolution and where subtitles appear.
-
-## Usage
-
-### Basic Usage
+### Usage
 
 1. **Start the application:**
    ```bash
    python main.py
    ```
 
-2. **Position your video player** so subtitles are in the configured region
+2. **Position your video content** so subtitles are in the capture region
 
-3. **Press 'i'** to capture and translate subtitles
+3. **Press 'i'** when you want to translate subtitles
 
-4. **Press 'q' or 'Esc'** to exit
+4. **Enjoy the beautiful popup** with translations and grammar explanations!
 
-### Advanced Usage
+5. **Press 'q' or 'Esc'** to exit
 
-- **Custom screen regions**: Modify `SUBTITLES_REGION` in environment variables
-- **Different languages**: Change `OCR_LANGUAGE` for other subtitle languages
-- **Model customization**: Adjust `TEMPERATURE` and `MAX_TOKENS` for different AI responses
+## 🎨 Modern Desktop Popup
 
-## How It Works
+The new interface features:
 
-1. **Screen Capture**: Takes a screenshot of the configured subtitle region
-2. **OCR Processing**: Extracts text using Tesseract with Italian language support
-3. **AI Translation**: Sends text to OpenAI GPT for translation and explanation
-4. **Learning Content**: Provides detailed grammatical analysis and word explanations
-5. **Display**: Shows results in a user-friendly interface
+- **Professional Design** - Clean, modern appearance similar to business applications
+- **Tabbed Interface** - Organized sections for Original, Translation, and Grammar
+- **Always on Top** - Stays visible while you continue watching
+- **Draggable** - Move it anywhere on your screen
+- **Copy Buttons** - Easy copying of any content
+- **Smooth Animations** - Beautiful entrance and exit effects
+- **Responsive Layout** - Adapts to different content lengths
 
-## Troubleshooting
+## 🔧 Configuration
+
+### Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+# OpenAI Configuration
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Screen Region for Subtitles (x, y, width, height)
+SUBTITLES_REGION=150,750,1520,330
+
+# OpenAI Model Settings
+OPENAI_MODEL=gpt-3.5-turbo
+MAX_TOKENS=500
+TEMPERATURE=0.7
+
+# OCR Settings
+OCR_LANGUAGE=ita
+IMAGE_THRESHOLD=200
+```
+
+### Screen Region Setup
+
+The `SUBTITLES_REGION` defines where subtitles appear on your screen:
+- **Format:** `x,y,width,height`
+- **Default:** `150,750,1520,330` (bottom center area)
+- **Adjust** based on your screen resolution and video player
+
+## 🏗️ Architecture
+
+- **PyQt6** - Modern desktop GUI framework
+- **OpenAI GPT-3.5-turbo** - AI-powered translation and explanations
+- **Tesseract OCR** - Text extraction from images
+- **PyAutoGUI** - Screen capture functionality
+- **Pynput** - Keyboard hotkey listening
+
+## 📱 How It Works
+
+1. **Screen Capture** - Captures the specified region when you press 'i'
+2. **OCR Processing** - Extracts Italian text using Tesseract
+3. **AI Translation** - Sends text to OpenAI for translation and grammar explanation
+4. **Modern Popup** - Displays results in a beautiful, organized interface
+5. **Learning** - Study grammar explanations and improve your Italian!
+
+## 🎯 Learning Features
+
+- **Word-by-word explanations** of Italian grammar
+- **Function identification** (verb, noun, preposition, etc.)
+- **Common expressions** and contractions
+- **Beginner-friendly** explanations
+- **Structured learning** with organized tabs
+
+## 🛠️ Troubleshooting
 
 ### Common Issues
 
-1. **"No OpenAI API key found"**
-   - Set the `OPENAI_API_KEY` environment variable
-   - Ensure the API key is valid and has credits
+1. **"No text detected"**
+   - Adjust `SUBTITLES_REGION` coordinates
+   - Ensure subtitles are visible and clear
+   - Check Tesseract installation
 
-2. **"Failed to capture screenshot"**
-   - Check if the `SUBTITLES_REGION` coordinates are correct
-   - Ensure the application has screen capture permissions
+2. **"API key not found"**
+   - Run `python setup.py` to configure
+   - Check your `.env` file
+   - Verify environment variables
 
-3. **"No text detected"**
-   - Adjust the `IMAGE_THRESHOLD` value
-   - Check if subtitles are clearly visible in the capture region
-   - Verify Tesseract is properly installed
+3. **Popup not appearing**
+   - Ensure PyQt6 is installed: `pip install PyQt6`
+   - Check for error messages in console
+   - Verify screen resolution compatibility
 
-4. **Poor OCR accuracy**
-   - Increase `IMAGE_THRESHOLD` for darker text
-   - Decrease for lighter text
-   - Ensure good contrast between text and background
+### Performance Tips
 
-### Logs
+- **Optimize screen region** to capture only subtitle area
+- **Adjust image threshold** for better OCR accuracy
+- **Use appropriate language** for your content (ita, eng, etc.)
 
-The application creates detailed logs in `app.log` for debugging:
-```bash
-tail -f app.log  # Monitor logs in real-time
-```
+## 🤝 Contributing
 
-## Contributing
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
-Feel free to submit issues and enhancement requests!
+## 📄 License
 
-## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-This project is open source and available under the MIT License.
+## 🙏 Acknowledgments
+
+- **OpenAI** for powerful language models
+- **Tesseract** for OCR capabilities
+- **PyQt6** for modern desktop interface
+- **Italian language learners** for inspiration
+
+---
+
+**🎯 Start learning Italian today with idIAmas!**
+
+Press 'i' to translate, 'q' to quit, and enjoy your language learning journey! 🇮🇹✨

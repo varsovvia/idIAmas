@@ -521,34 +521,47 @@ class PopupWindow(QMainWindow):
         
         for line in lines:
             line = line.strip()
-            if not line or line.startswith('-') is False:
+            if not line:
                 continue
                 
-            # Remove the leading dash
-            line = line.lstrip('- ')
+            # Handle lines that start with dash or just contain the word explanations
+            if line.startswith('-'):
+                line = line.lstrip('- ')
             
-            # Parse "word: explanation (function)" format
+            # Parse "word: explanation (function)" format or similar variations
             if ':' in line:
                 parts = line.split(':', 1)
                 word = parts[0].strip()
                 rest = parts[1].strip()
                 
-                # Extract function from parentheses
+                # Extract function from parentheses - look for patterns like (sustantivo), (verbo), etc.
                 function = ''
                 explanation = rest
                 
+                # Look for parentheses containing grammatical function
                 if '(' in rest and ')' in rest:
                     func_start = rest.rfind('(')
                     func_end = rest.rfind(')')
                     if func_start < func_end:
-                        function = rest[func_start+1:func_end]
-                        explanation = rest[:func_start].strip()
+                        potential_function = rest[func_start+1:func_end]
+                        # Only treat as function if it looks like a grammatical term
+                        if any(term in potential_function.lower() for term in [
+                            'sustantivo', 'verbo', 'adjetivo', 'adverbio', 'preposición', 
+                            'conjunción', 'pronombre', 'artículo', 'presente', 'pasado',
+                            'participio', 'infinitivo', 'singular', 'plural', 'femenino', 'masculino'
+                        ]):
+                            function = potential_function
+                            explanation = rest[:func_start].strip()
                 
-                word_explanations.append({
-                    'word': word,
-                    'explanation': explanation,
-                    'function': function
-                })
+                # Clean up the explanation - remove extra quotes or formatting
+                explanation = explanation.strip('"\'""')
+                
+                if word and explanation:  # Only add if we have both word and explanation
+                    word_explanations.append({
+                        'word': word,
+                        'explanation': explanation,
+                        'function': function
+                    })
         
         return word_explanations
     

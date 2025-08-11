@@ -1422,6 +1422,7 @@ print(f"=== MODERN POPUP SUBPROCESS STARTED [{{POPUP_ID}}] ===")
 
 try:
     from PyQt6.QtWidgets import QApplication
+    from PyQt6.QtCore import Qt
     from popup_refactored import PopupWindow
     
     with open(r"{temp_file}", 'r', encoding='utf-8') as f:
@@ -1430,6 +1431,9 @@ try:
     app = QApplication(sys.argv)
     popup = PopupWindow(sections)
     popup.setWindowTitle(f"idIAmas [{{POPUP_ID}}]")  # Set unique title
+    
+    # Force window to stay on top and be visible
+    popup.setWindowFlags(popup.windowFlags() | Qt.WindowType.WindowStaysOnTopHint)
     popup.show()
     popup.raise_()
     popup.activateWindow()
@@ -1456,9 +1460,9 @@ finally:
             script_file = f.name
         
         if sys.platform == 'win32':
-            # Hide the console window for a cleaner experience
+            # Create new console but allow popup to show above other windows
             process = subprocess.Popen([sys.executable, script_file], 
-                                     creationflags=subprocess.CREATE_NO_WINDOW)
+                                     creationflags=subprocess.CREATE_NEW_CONSOLE)
         else:
             process = subprocess.Popen([sys.executable, script_file])
         

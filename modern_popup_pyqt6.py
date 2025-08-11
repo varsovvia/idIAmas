@@ -450,11 +450,9 @@ class ModernPyQt6Popup(QMainWindow):
         )
         self.tab_widget.addTab(translation_tab, "🇪🇸 Traducción")
         
-        # Grammar tab
-        grammar_tab = self.create_enhanced_content_tab(
-            "📚 Gramática", 
-            self.translation_data.get('grammar', ''),
-            "#4ecdc4"
+        # Grammar tab (special handling for word-by-word breakdown)
+        grammar_tab = self.create_grammar_tab(
+            self.translation_data.get('grammar', '')
         )
         self.tab_widget.addTab(grammar_tab, "📚 Gramática")
         
@@ -535,6 +533,240 @@ class ModernPyQt6Popup(QMainWindow):
         layout.addWidget(content_area)
         
         return tab
+    
+    def create_grammar_tab(self, content):
+        """Create a special grammar tab with word-by-word breakdown"""
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        layout.setContentsMargins(32, 32, 32, 32)
+        layout.setSpacing(24)
+        
+        # Tab header
+        header_layout = QHBoxLayout()
+        
+        title_label = QLabel("📚 Gramática")
+        title_label.setObjectName("tabTitle")
+        title_label.setStyleSheet(f"""
+            QLabel#tabTitle {{
+                color: #4ecdc4;
+                font-size: 24px;
+                font-weight: 700;
+                letter-spacing: 0.8px;
+            }}
+        """)
+        
+        # Copy button
+        copy_btn = QPushButton("📋 Copiar")
+        copy_btn.clicked.connect(lambda: self.copy_to_clipboard(content))
+        
+        header_layout.addWidget(title_label)
+        header_layout.addStretch()
+        header_layout.addWidget(copy_btn)
+        
+        layout.addLayout(header_layout)
+        
+        # Create grammar content with word cards
+        grammar_content = self.create_grammar_content(content)
+        layout.addWidget(grammar_content)
+        
+        return tab
+    
+    def create_grammar_content(self, content: str) -> QWidget:
+        """Create grammar explanation content with individual word cards"""
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(15)
+        
+        if not content.strip():
+            label = QLabel("No grammar explanation available.")
+            label.setStyleSheet("color: #666; font-style: italic; font-size: 14px;")
+            layout.addWidget(label)
+            layout.addStretch()
+            scroll_area.setWidget(widget)
+            return scroll_area
+        
+        # Parse the grammar content into word explanations
+        word_explanations = self.parse_word_explanations(content)
+        
+        if not word_explanations:
+            # Fallback to original formatting if parsing fails
+            fallback_content = self.create_fallback_grammar_content(content)
+            scroll_area.setWidget(fallback_content)
+            return scroll_area
+        
+        # Create word cards
+        for word_data in word_explanations:
+            word_card = self.create_word_card(word_data)
+            layout.addWidget(word_card)
+        
+        layout.addStretch()
+        scroll_area.setWidget(widget)
+        
+        # Style the scroll area
+        scroll_area.setStyleSheet("""
+            QScrollArea {
+                border: none;
+                background: transparent;
+            }
+            QScrollBar:vertical {
+                background-color: rgba(26, 26, 46, 0.3);
+                width: 12px;
+                border-radius: 6px;
+                margin: 2px;
+            }
+            QScrollBar::handle:vertical {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #4ecdc4, stop:1 #45b7aa);
+                border-radius: 6px;
+                min-height: 30px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #45b7aa, stop:1 #3d9991);
+            }
+        """)
+        
+        return scroll_area
+    
+    def parse_word_explanations(self, content: str) -> list:
+        """Parse grammar content into individual word explanations"""
+        word_explanations = []
+        lines = content.strip().split('\n')
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+                
+            # Look for pattern: "word: explanation" or "- word: explanation"
+            line = line.lstrip('-•').strip()
+            
+            if ':' in line:
+                parts = line.split(':', 1)
+                if len(parts) == 2:
+                    word = parts[0].strip()
+                    explanation = parts[1].strip()
+                    
+                    # Extract grammatical function if in parentheses
+                    function = ""
+                    if '(' in explanation and ')' in explanation:
+                        start = explanation.find('(')
+                        end = explanation.find(')', start)
+                        if start != -1 and end != -1:
+                            function = explanation[start+1:end]
+                            explanation = explanation[:start].strip() + explanation[end+1:].strip()
+                    
+                    word_explanations.append({
+                        'word': word,
+                        'explanation': explanation,
+                        'function': function
+                    })
+        
+        return word_explanations
+    
+    def create_word_card(self, word_data: dict) -> QWidget:
+        """Create a visual card for a single word explanation"""
+        card = QWidget()
+        card.setStyleSheet("""
+            QWidget {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+                    stop:0 #ffffff, stop:1 #f8f9fa);
+                border: 2px solid #e9ecef;
+                border-radius: 12px;
+                margin: 5px;
+                padding: 15px;
+            }
+            QWidget:hover {
+                border-color: #4CAF50;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+                    stop:0 #f8fffa, stop:1 #f0f8f0);
+            }
+        """)
+        
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(8)
+        
+        # Word title
+        word_label = QLabel(word_data['word'])
+        word_label.setStyleSheet("""
+            color: #2E7D32;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        """)
+        layout.addWidget(word_label)
+        
+        # Grammatical function (if available)
+        if word_data['function']:
+            function_label = QLabel(f"({word_data['function']})")
+            function_label.setStyleSheet("""
+                color: #666;
+                font-size: 12px;
+                font-style: italic;
+                margin-bottom: 8px;
+            """)
+            layout.addWidget(function_label)
+        
+        # Explanation
+        explanation_label = QLabel(word_data['explanation'])
+        explanation_label.setStyleSheet("""
+            color: #333;
+            font-size: 14px;
+            line-height: 1.4;
+        """)
+        explanation_label.setWordWrap(True)
+        layout.addWidget(explanation_label)
+        
+        return card
+    
+    def create_fallback_grammar_content(self, content: str) -> QWidget:
+        """Fallback grammar content if parsing fails"""
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(15)
+        
+        # Split content into lines and process each
+        lines = content.strip().split('\n')
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+                
+            if line.startswith('-') or line.startswith('•'):
+                # Bullet point
+                line = line.lstrip('-•').strip()
+                bullet_widget = QWidget()
+                bullet_layout = QHBoxLayout(bullet_widget)
+                bullet_layout.setContentsMargins(0, 5, 0, 5)
+                
+                bullet_label = QLabel("•")
+                bullet_label.setStyleSheet("color: #4CAF50; font-weight: bold; font-size: 16px;")
+                bullet_label.setFixedWidth(20)
+                
+                text_label = QLabel(line)
+                text_label.setStyleSheet("color: #333; font-size: 14px; line-height: 1.6;")
+                text_label.setWordWrap(True)
+                
+                bullet_layout.addWidget(bullet_label)
+                bullet_layout.addWidget(text_label)
+                layout.addWidget(bullet_widget)
+            else:
+                # Regular text
+                label = QLabel(line)
+                label.setStyleSheet("color: #333; font-size: 14px; line-height: 1.6; margin: 5px 0px;")
+                label.setWordWrap(True)
+                layout.addWidget(label)
+        
+        layout.addStretch()
+        return widget
         
     def create_enhanced_footer(self, parent_layout):
         """Create the enhanced footer section"""

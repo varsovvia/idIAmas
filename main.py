@@ -110,32 +110,34 @@ class SubtitleTranslator:
             target_lang = "Spanish" if explanation_lang == "spanish" else explanation_lang.title()
             
             prompt = (
-                f"Translate the following Italian text and provide a complete explanation in {target_lang}. "
-                f"Format your response exactly as follows:\n\n"
+                f"Traduce el siguiente texto italiano y proporciona una explicación completa EN ESPAÑOL. "
+                f"Formatea tu respuesta EXACTAMENTE así:\n\n"
                 f"ORIGINAL TEXT:\n"
-                f"[Write the Italian text exactly as received]\n\n"
-                f"TRANSLATION TO {target_lang.upper()}:\n"
-                f"[Clear and natural translation to {target_lang}]\n\n"
+                f"[Escribe el texto italiano exactamente como fue recibido]\n\n"
+                f"TRANSLATION TO SPANISH:\n"
+                f"[Traducción clara y natural al español]\n\n"
                 f"GRAMMAR EXPLANATION:\n"
-                f"[Explain each important word or phrase, its grammatical function and meaning. "
-                f"Be clear and educational for a beginner]\n\n"
-                f"Text to translate: {texto}\n\n"
-                f"Response:"
+                f"[Explica cada palabra importante EN ESPAÑOL, una por línea:\n"
+                f"palabra: significado en español (función gramatical)\n"
+                f"Sé claro y educativo para un principiante]\n\n"
+                f"Texto a traducir: {texto}\n\n"
+                f"Respuesta:"
             )
 
             response = self.client.chat.completions.create(
                 model=self.config.model,
                 messages=[
-                    {"role": "system", "content": f"You are an Italian teacher for beginners. You receive Italian phrases from subtitles. "
-                    f"Your task is:\n"
-                    f"1. Rewrite the Italian phrase exactly as received (ORIGINAL TEXT)\n"
-                    f"2. Translate it to {target_lang} with the same meaning (TRANSLATION TO {target_lang.upper()})\n"
-                    f"3. Explain each important word in the phrase (GRAMMAR EXPLANATION):\n"
-                    f"   - meaning in {target_lang}\n"
-                    f"   - grammatical function (verb, noun, preposition...)\n"
-                    f"   - notes about contractions, conjugations or common expressions\n"
-                    f"4. Use the exact format specified in the prompt\n"
-                    f"Be clear, patient and direct, as if the reader knows nothing yet."},
+                    {"role": "system", "content": f"Eres un profesor de italiano para principiantes. Recibes frases en italiano de subtítulos. "
+                    f"Tu tarea es:\n"
+                    f"1. Reescribir la frase italiana exactamente como fue recibida (ORIGINAL TEXT)\n"
+                    f"2. Traducirla al español con el mismo sentido (TRANSLATION TO SPANISH)\n"
+                    f"3. Explicar cada palabra importante de la frase EN ESPAÑOL (GRAMMAR EXPLANATION):\n"
+                    f"   - significado en español\n"
+                    f"   - función gramatical (verbo, sustantivo, preposición...)\n"
+                    f"   - notas sobre contracciones, conjugaciones o expresiones comunes\n"
+                    f"   - Formato: 'palabra: explicación en español'\n"
+                    f"4. Usa el formato exacto especificado en el prompt\n"
+                    f"Sé claro, paciente y directo. TODA LA EXPLICACIÓN DEBE SER EN ESPAÑOL."},
                     {"role": "user", "content": prompt},
                 ],
                 max_tokens=self.config.max_tokens,

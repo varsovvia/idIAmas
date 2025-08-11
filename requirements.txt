@@ -1,0 +1,6 @@
+pyautogui>=0.9.54
+pytesseract>=0.3.10
+Pillow>=9.0.0
+openai>=1.0.0
+pynput>=1.7.6
+python-dotenv>=1.0.0

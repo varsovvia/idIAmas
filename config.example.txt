@@ -1,0 +1,22 @@
+# Configuration Example for idIAmas
+# Copy these environment variables to your system or create a .env file
+
+# OpenAI Configuration
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Screen Region for Subtitles (x, y, width, height)
+SUBTITLES_REGION=150,750,1520,330
+
+# OpenAI Model Settings
+OPENAI_MODEL=gpt-3.5-turbo
+MAX_TOKENS=500
+TEMPERATURE=0.7
+
+# OCR Settings
+OCR_LANGUAGE=ita
+IMAGE_THRESHOLD=200
+
+# How to use:
+# 1. Set these as environment variables in your system
+# 2. Or create a .env file in the same directory as main.py
+# 3. Make sure to replace 'your_openai_api_key_here' with your actual OpenAI API key

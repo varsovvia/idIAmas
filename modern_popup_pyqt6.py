@@ -887,6 +887,8 @@ finally:
 
 def parse_ai_response(texto: str) -> dict:
     """Parse the AI response into structured sections"""
+    print(f"🔍 Parsing AI response:\n{texto}\n" + "="*50)
+    
     sections = {
         'original': '',
         'translation': '',
@@ -902,19 +904,25 @@ def parse_ai_response(texto: str) -> dict:
             continue
             
         # Detect section headers
-        if any(keyword in line.lower() for keyword in ['italiano', 'original', 'frase']):
+        if any(keyword in line.lower() for keyword in ['texto original', 'italiano', 'original', 'frase']):
             current_section = 'original'
             continue
-        elif any(keyword in line.lower() for keyword in ['español', 'traducción', 'traducida']):
+        elif any(keyword in line.lower() for keyword in ['traducción al español', 'español', 'traducción', 'traducida']):
             current_section = 'translation'
             continue
-        elif any(keyword in line.lower() for keyword in ['gramática', 'explicación', 'palabras', 'función']):
+        elif any(keyword in line.lower() for keyword in ['explicación gramatical', 'gramática', 'explicación', 'palabras', 'función']):
             current_section = 'grammar'
             continue
             
         # Add line to current section
         if current_section in sections:
             sections[current_section] += line + '\n'
+    
+    # Debug output
+    print(f"🎯 Parsed sections:")
+    for section_name, content in sections.items():
+        content_preview = content[:100] + "..." if len(content) > 100 else content
+        print(f"  {section_name}: {len(content)} chars - {content_preview.strip()}")
             
     return sections
 

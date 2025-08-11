@@ -1347,19 +1347,10 @@ if __name__ == "__main__":
 
 def show_modern_popup(texto: str):
     """
-    New main function to display translation results using the refactored PopupWindow.
-    Uses the modern, professional implementation with proper fade overlay.
+    New main function to display translation results using subprocess approach.
+    Always uses subprocess to avoid threading issues with QApplication.
     """
     global _active_popup_processes, _last_popup_time
-    
-    # Import new popup implementation
-    try:
-        from popup_refactored import PopupWindow
-        use_new_popup = True
-    except ImportError:
-        use_new_popup = False
-        print("⚠️ New popup implementation not found, using old implementation")
-        return mostrar_explicacion_moderna_pyqt6(texto)
     
     # Prevent rapid-fire popups (wait at least 2 seconds between popups)
     import time
@@ -1376,25 +1367,113 @@ def show_modern_popup(texto: str):
         sections = parse_ai_response(texto)
         print(f"📄 Parsed sections: {list(sections.keys())}")
         
-        # Check if QApplication exists
-        app = QApplication.instance()
-        if app is None:
-            print("📱 Creating new QApplication...")
-            app = QApplication(sys.argv)
-            # Qt6 handles high DPI support automatically
-        else:
-            print("📱 Using existing QApplication...")
-        
-        # Create and show new popup
-        popup = PopupWindow(sections)
-        popup.show()
-        popup.raise_()
-        popup.activateWindow()
-        
-        print("✅ Modern popup created successfully!")
-        return popup
+        # Always use subprocess approach to avoid threading issues
+        return _create_modern_subprocess_popup(sections)
         
     except Exception as error:
         print(f"❌ Error creating modern popup: {error}")
         print("🔄 Falling back to old implementation...")
-        return mostrar_explicacion_moderna_pyqt6(texto)
+        return _create_subprocess_popup(sections)
+
+
+def _create_modern_subprocess_popup(sections: dict):
+    """Create modern popup using subprocess approach"""
+    global _active_popup_processes
+    
+    try:
+        # Aggressively clean up any existing processes
+        print(f"🧹 Cleaning up {len(_active_popup_processes)} existing popup processes...")
+        
+        # Force kill all existing popup processes immediately
+        for process in _active_popup_processes:
+            try:
+                process.kill()  # Force kill immediately
+                print(f"💀 Killed process PID {process.pid}")
+            except:
+                pass
+        
+        # Clear the list
+        _active_popup_processes.clear()
+        
+        import subprocess
+        import json
+        import tempfile
+        import os
+        
+        # Create a temporary file with the translation data
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False, encoding='utf-8') as f:
+            json.dump(sections, f, ensure_ascii=False, indent=2)
+            temp_file = f.name
+        
+        # Create unique popup identifier
+        popup_id = str(uuid.uuid4())[:8]
+        
+        # Create a subprocess script using the new popup implementation
+        popup_script = f'''
+import sys
+import json
+import os
+sys.path.insert(0, r"{os.getcwd()}")
+
+# Unique popup identifier
+POPUP_ID = "{popup_id}"
+print(f"=== MODERN POPUP SUBPROCESS STARTED [{{POPUP_ID}}] ===")
+
+try:
+    from PyQt6.QtWidgets import QApplication
+    from popup_refactored import PopupWindow
+    
+    with open(r"{temp_file}", 'r', encoding='utf-8') as f:
+        sections = json.load(f)
+    
+    app = QApplication(sys.argv)
+    popup = PopupWindow(sections)
+    popup.setWindowTitle(f"idIAmas [{{POPUP_ID}}]")  # Set unique title
+    popup.show()
+    popup.raise_()
+    popup.activateWindow()
+    
+    print(f"✅ Modern Popup [{{POPUP_ID}}] displayed successfully!")
+    result = app.exec()
+    print(f"📄 Modern Popup [{{POPUP_ID}}] closed with result: {{result}}")
+    
+except Exception as e:
+    print(f"❌ ERROR in modern popup [{{POPUP_ID}}]: {{e}}")
+    import traceback
+    traceback.print_exc()
+finally:
+    try:
+        os.unlink(r"{temp_file}")
+    except:
+        pass
+    print(f"🗑️ Modern Popup [{{POPUP_ID}}] cleanup completed")
+'''
+        
+        # Write and launch script
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False, encoding='utf-8') as f:
+            f.write(popup_script)
+            script_file = f.name
+        
+        if sys.platform == 'win32':
+            # Hide the console window for a cleaner experience
+            process = subprocess.Popen([sys.executable, script_file], 
+                                     creationflags=subprocess.CREATE_NO_WINDOW)
+        else:
+            process = subprocess.Popen([sys.executable, script_file])
+        
+        _active_popup_processes.append(process)
+        print(f"✨ Modern subprocess popup launched [PID: {process.pid}, ID: {popup_id}]")
+        
+        # Wait a moment to ensure the process starts
+        import time
+        time.sleep(0.5)
+        
+        if process.poll() is not None:
+            print(f"⚠️ Modern popup process exited immediately with code: {process.returncode}")
+            return None
+        
+        return process
+        
+    except Exception as e:
+        print(f"❌ Error creating modern subprocess popup: {e}")
+        return None

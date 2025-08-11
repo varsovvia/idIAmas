@@ -54,9 +54,30 @@ sudo apt-get install tesseract-ocr-ita  # Italian language pack
 pip install -r requirements.txt
 ```
 
+### 3. Configure the Application
+
+**Easiest way - Use the setup wizard:**
+```bash
+python setup.py
+```
+
+This will guide you through:
+- Setting up your OpenAI API key
+- Configuring screen regions for subtitles
+- Setting language preferences
+- Creating the necessary configuration files
+
 ## Configuration
 
-### 1. Set Environment Variables
+### 🚀 Quick Setup (Recommended)
+
+**Option 1: Setup Wizard**
+```bash
+python setup.py
+```
+This interactive wizard will guide you through the configuration process!
+
+**Option 2: Manual Configuration**
 
 Create a `.env` file in the project directory or set system environment variables:
 

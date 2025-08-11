@@ -231,7 +231,13 @@ def main():
         
         if not config.api_key:
             logger.error("No OpenAI API key found. Please set OPENAI_API_KEY environment variable.")
-            print("Error: No OpenAI API key configured. Please set OPENAI_API_KEY environment variable.")
+            print("❌ Error: No OpenAI API key configured!")
+            print("\n🔧 Quick Setup Options:")
+            print("   1. Run the setup wizard: python setup.py")
+            print("   2. Create a .env file with your API key")
+            print("   3. Set OPENAI_API_KEY environment variable")
+            print("\n📚 For detailed instructions, see CONFIGURATION.md")
+            print("🔑 Get your API key from: https://platform.openai.com/api-keys")
             return
         
         # Initialize translator

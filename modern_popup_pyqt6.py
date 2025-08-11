@@ -985,10 +985,10 @@ def mostrar_explicacion_moderna_pyqt6(texto: str):
     """Main function to display translation results in the modern PyQt6 popup"""
     global _active_popup_processes, _last_popup_time
     
-    # Prevent rapid-fire popups (wait at least 1 second between popups)
+    # Prevent rapid-fire popups (wait at least 2 seconds between popups)
     import time
     current_time = time.time()
-    if current_time - _last_popup_time < 1.0:
+    if current_time - _last_popup_time < 2.0:
         print("⏰ Popup request too soon, ignoring...")
         return None
     _last_popup_time = current_time
@@ -1041,20 +1041,27 @@ def _create_subprocess_popup(sections: dict):
     global _active_popup_processes
     
     try:
-        # Clean up any finished processes first
-        _active_popup_processes = [p for p in _active_popup_processes if p.poll() is None]
+        # Aggressively clean up any existing processes
+        print(f"🧹 Cleaning up {len(_active_popup_processes)} existing popup processes...")
         
-        # Close any existing popups to prevent multiple popups
+        # Force kill all existing popup processes immediately
         for process in _active_popup_processes:
             try:
-                process.terminate()
-                process.wait(timeout=2)  # Wait up to 2 seconds for clean termination
+                process.kill()  # Force kill immediately
+                print(f"💀 Killed process PID {process.pid}")
             except:
-                try:
-                    process.kill()  # Force kill if terminate doesn't work
-                except:
-                    pass
+                pass
+        
+        # Clear the list and also kill any python processes that might be popup subprocesses
         _active_popup_processes.clear()
+        
+        # Additional cleanup: kill any python processes that might be hanging around
+        try:
+            import subprocess
+            subprocess.run(['taskkill', '/f', '/im', 'python.exe', '/fi', 'WINDOWTITLE eq *'], 
+                          capture_output=True, check=False)
+        except:
+            pass
         
         import subprocess
         import json
@@ -1066,14 +1073,21 @@ def _create_subprocess_popup(sections: dict):
             json.dump(sections, f, ensure_ascii=False, indent=2)
             temp_file = f.name
         
-        # Create a simple subprocess script
+        # Create unique popup identifier
+        import uuid
+        popup_id = str(uuid.uuid4())[:8]
+        
+        # Create a simple subprocess script with unique identification
         popup_script = f'''
 import sys
 import json
 import os
 sys.path.insert(0, r"{os.getcwd()}")
 
-print("=== POPUP SUBPROCESS STARTED ===")
+# Unique popup identifier
+POPUP_ID = "{popup_id}"
+print(f"=== POPUP SUBPROCESS STARTED [{{POPUP_ID}}] ===")
+
 try:
     from PyQt6.QtWidgets import QApplication
     from modern_popup_pyqt6 import ModernPyQt6Popup
@@ -1083,15 +1097,17 @@ try:
     
     app = QApplication(sys.argv)
     popup = ModernPyQt6Popup(sections)
+    popup.setWindowTitle(f"idIAmas [{{POPUP_ID}}]")  # Set unique title
     popup.show()
     popup.raise_()
     popup.activateWindow()
     
-    print("✅ Popup displayed successfully!")
+    print(f"✅ Popup [{{POPUP_ID}}] displayed successfully!")
     result = app.exec()
+    print(f"📄 Popup [{{POPUP_ID}}] closed with result: {{result}}")
     
 except Exception as e:
-    print(f"❌ ERROR: {{e}}")
+    print(f"❌ ERROR in popup [{{POPUP_ID}}]: {{e}}")
     import traceback
     traceback.print_exc()
 finally:
@@ -1099,6 +1115,7 @@ finally:
         os.unlink(r"{temp_file}")
     except:
         pass
+    print(f"🗑️ Popup [{{POPUP_ID}}] cleanup completed")
 '''
         
         # Write and launch script
@@ -1114,7 +1131,16 @@ finally:
             process = subprocess.Popen([sys.executable, script_file])
         
         _active_popup_processes.append(process)
-        print("✨ Subprocess popup launched")
+        print(f"✨ Subprocess popup launched [PID: {process.pid}, ID: {popup_id}]")
+        
+        # Wait a moment to ensure the process starts
+        import time
+        time.sleep(0.5)
+        
+        if process.poll() is not None:
+            print(f"⚠️ Popup process exited immediately with code: {process.returncode}")
+            _active_popup_processes.remove(process)
+        
         return None
         
     except Exception as e:

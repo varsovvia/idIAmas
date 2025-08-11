@@ -594,7 +594,7 @@ class ModernPyQt6Popup(QMainWindow):
         
         widget = QWidget()
         layout = QVBoxLayout(widget)
-        layout.setContentsMargins(10, 10, 10, 80)  # Extra bottom margin for gradient
+        layout.setContentsMargins(10, 10, 10, 10)  # Normal margins
         layout.setSpacing(15)
         
         if not content.strip():
@@ -623,6 +623,10 @@ class ModernPyQt6Popup(QMainWindow):
             word_card = self.create_word_card(word_data)
             layout.addWidget(word_card)
         
+        # Add gradient fade widget at the end
+        gradient_fade = self.create_gradient_fade_widget()
+        layout.addWidget(gradient_fade)
+        
         layout.addStretch()
         scroll_area.setWidget(widget)
         
@@ -650,10 +654,25 @@ class ModernPyQt6Popup(QMainWindow):
             }
         """)
         
-        # Create gradient overlay positioned at bottom
-        gradient_overlay = self.create_gradient_overlay(container)
-        
         return container
+    
+    def create_gradient_fade_widget(self) -> QWidget:
+        """Create a gradient fade widget to place at the end of content"""
+        fade_widget = QWidget()
+        fade_widget.setFixedHeight(60)
+        fade_widget.setStyleSheet("""
+            QWidget {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(248, 249, 250, 1.0),
+                    stop:0.3 rgba(26, 26, 46, 0.3),
+                    stop:0.7 rgba(26, 26, 46, 0.8),
+                    stop:1.0 rgba(26, 26, 46, 1.0));
+                border: none;
+                margin: 0px;
+                padding: 0px;
+            }
+        """)
+        return fade_widget
     
     def create_gradient_overlay(self, parent: QWidget) -> QWidget:
         """Create a gradient overlay that fades content into the background"""
@@ -676,10 +695,17 @@ class ModernPyQt6Popup(QMainWindow):
             }
         """)
         
-        # Create a resize handler to keep overlay positioned correctly
+        # Position the gradient at the bottom of the visible content area
         def update_overlay_position():
             if parent and overlay:
-                overlay.setGeometry(0, parent.height() - 80, parent.width(), 80)
+                # Get the actual scroll area height and position gradient there
+                scroll_widget = parent.findChild(QScrollArea)
+                if scroll_widget:
+                    scroll_height = scroll_widget.height()
+                    overlay.setGeometry(0, scroll_height - 80, parent.width(), 80)
+                else:
+                    # Fallback positioning
+                    overlay.setGeometry(0, parent.height() - 80, parent.width(), 80)
                 overlay.raise_()
         
         # Connect to resize event (using QTimer for better performance)

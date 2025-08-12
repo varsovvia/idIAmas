@@ -25,6 +25,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Union
 import json
+import re
 
 
 def _as_string(value: Any) -> str:
@@ -77,6 +78,9 @@ def parse_and_validate_translation(payload: Union[str, Dict[str, Any]]) -> Dict[
         data: Dict[str, Any]
         if isinstance(payload, str):
             s = payload.strip()
+            # Remove common code fences if present
+            if s.startswith('```'):
+                s = s.strip('`')
             # Extract object if the string contains extra wrapper text
             start = s.find('{')
             end = s.rfind('}')
@@ -92,8 +96,51 @@ def parse_and_validate_translation(payload: Union[str, Dict[str, Any]]) -> Dict[
         translation = _as_string(data.get("translation", "")).strip()
         grammar_items = _normalize_grammar_items(data.get("grammar", []))
     except Exception:
-        # keep defaults
-        pass
+        # Fallback: regex-based extraction from raw text even if JSON is malformed/codefenced
+        try:
+            s = payload if isinstance(payload, str) else json.dumps(payload)
+            # Strip code fences
+            s = re.sub(r"```(json)?", "", s)
+            # Pull original/translation if present
+            m_orig = re.search(r'"original"\s*:\s*"([\s\S]*?)"', s)
+            m_trans = re.search(r'"translation"\s*:\s*"([\s\S]*?)"', s)
+            if m_orig:
+                original = m_orig.group(1).strip()
+            if m_trans:
+                translation = m_trans.group(1).strip()
+            # Try grammar array extraction
+            m_gram = re.search(r'"grammar"\s*:\s*(\[[\s\S]*?\])', s)
+            if m_gram:
+                gram_str = m_gram.group(1)
+                try:
+                    grammar_items = json.loads(gram_str)
+                except Exception:
+                    # Attempt to repair trailing comma issues
+                    gram_repaired = re.sub(r",\s*\]", "]", gram_str)
+                    try:
+                        grammar_items = json.loads(gram_repaired)
+                    except Exception:
+                        # Last resort: extract per-item objects with regex
+                        obj_matches = re.findall(r"\{[\s\S]*?\}", gram_str)
+                        extracted: List[Dict[str, Any]] = []
+                        for obj in obj_matches:
+                            def _field(name: str) -> str:
+                                m = re.search(fr'"{name}"\s*:\s*"([\s\S]*?)"', obj)
+                                return m.group(1).strip() if m else ""
+                            item = {
+                                'word': _field('word'),
+                                'explanation': _field('explanation'),
+                                'function': _field('function'),
+                                'additional_info': _field('additional_info'),
+                                'examples': _field('examples'),
+                                'difficulty': _field('difficulty'),
+                            }
+                            if item['word'] or item['explanation']:
+                                extracted.append(item)
+                        grammar_items = extracted
+        except Exception:
+            # keep defaults if everything fails
+            pass
 
     grammar_text = _build_grammar_text(grammar_items)
 

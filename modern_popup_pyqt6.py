@@ -1585,6 +1585,20 @@ def show_modern_popup(texto: str):
     try:
         validated = parse_and_validate_translation(texto)
         print(f"📄 Parsed sections: {list(validated.keys())}")
+
+        # Fallback: if validated payload is empty, try legacy parser for resilience
+        if not (validated.get('original') or validated.get('translation') or validated.get('grammar_json')):
+            try:
+                sections = parse_ai_response(texto)
+                validated = {
+                    'original': sections.get('original', ''),
+                    'translation': sections.get('translation', ''),
+                    'grammar': sections.get('grammar', ''),
+                    'grammar_json': sections.get('grammar_json', []),
+                }
+            except Exception:
+                pass
+
         return launch_popup_subprocess(validated)
     except Exception as error:
         print(f"❌ Error creating modern popup: {error}")

@@ -23,6 +23,8 @@ import json
 import os
 import uuid
 from typing import Optional, Dict, Any
+from validation import parse_and_validate_translation
+from popup_launcher import launch_popup_subprocess
 
 # Respect timings-only mode; allow opt-out via POPUP_DEBUG=1
 TIMINGS_ONLY = os.getenv('TIMINGS_ONLY', '0') == '1'
@@ -1578,23 +1580,15 @@ if __name__ == "__main__":
 
 
 def show_modern_popup(texto: str):
-    """
-    Optimized popup display with simplified process management.
-    """
+    """Unified popup entrypoint: validate then launch refactored popup subprocess."""
     print("🚀 Starting optimized popup display...")
-    
     try:
-        # Parse the AI response
-        sections = parse_ai_response(texto)
-        print(f"📄 Parsed sections: {list(sections.keys())}")
-        
-        # Use the working subprocess approach
-        return _create_modern_subprocess_popup(sections)
-        
+        validated = parse_and_validate_translation(texto)
+        print(f"📄 Parsed sections: {list(validated.keys())}")
+        return launch_popup_subprocess(validated)
     except Exception as error:
         print(f"❌ Error creating modern popup: {error}")
-        print("🔄 Falling back to old implementation...")
-        return _create_subprocess_popup(sections)
+        return None
 
 
 def _create_modern_subprocess_popup(sections: dict):

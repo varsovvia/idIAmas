@@ -7,14 +7,13 @@ A premium, modern popup with gradients, animations, and sleek design
 import sys
 import time
 import threading
-import math
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QTabWidget, QTextEdit, QPushButton, 
                              QLabel, QFrame, QScrollArea, QSizePolicy, QGraphicsDropShadowEffect,
                              QProgressBar, QGraphicsOpacityEffect, QGraphicsBlurEffect)
 from PyQt6.QtCore import (Qt, QTimer, QPropertyAnimation, QEasingCurve, QRect, pyqtProperty, 
                           QThread, pyqtSignal, QEventLoop, QParallelAnimationGroup, 
-                          QSequentialAnimationGroup, QPropertyAnimation, QVariantAnimation)
+                          QSequentialAnimationGroup, QVariantAnimation)
 from PyQt6.QtGui import (QFont, QPalette, QColor, QIcon, QPixmap, QPainter, QBrush, 
                          QLinearGradient, QPen, QGradient, QRadialGradient)
 
@@ -22,10 +21,7 @@ import subprocess
 import tempfile
 import json
 import os
-import sys
 import uuid
-import time
-import threading
 from typing import Optional, Dict, Any
 
 # Respect timings-only mode; allow opt-out via POPUP_DEBUG=1

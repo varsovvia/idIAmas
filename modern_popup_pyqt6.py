@@ -1688,10 +1688,16 @@ finally:
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             startupinfo.wShowWindow = subprocess.SW_HIDE
+            stdout = subprocess.DEVNULL if os.getenv('TIMINGS_ONLY', '0') == '1' else None
+            stderr = subprocess.DEVNULL if os.getenv('TIMINGS_ONLY', '0') == '1' else None
             process = subprocess.Popen([sys.executable, script_file], 
-                                     startupinfo=startupinfo)
+                                       startupinfo=startupinfo,
+                                       stdout=stdout,
+                                       stderr=stderr)
         else:
-            process = subprocess.Popen([sys.executable, script_file])
+            stdout = subprocess.DEVNULL if os.getenv('TIMINGS_ONLY', '0') == '1' else None
+            stderr = subprocess.DEVNULL if os.getenv('TIMINGS_ONLY', '0') == '1' else None
+            process = subprocess.Popen([sys.executable, script_file], stdout=stdout, stderr=stderr)
         
         _active_popup_processes.append(process)
         print(f"✨ Modern subprocess popup launched [PID: {process.pid}, ID: {popup_id}]")

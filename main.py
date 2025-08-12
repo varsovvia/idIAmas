@@ -4,7 +4,8 @@ from PIL import Image
 from openai import OpenAI
 from pynput import keyboard
 
-from modern_popup_pyqt6 import show_modern_popup
+from validation import parse_and_validate_translation
+from popup_launcher import launch_popup_subprocess
 from utilidades import save_image
 import time
 import os
@@ -357,7 +358,8 @@ class SubtitleTranslator:
                 )
             
             # Show results in modern desktop popup
-            show_modern_popup(translation)
+            validated = parse_and_validate_translation(translation)
+            launch_popup_subprocess(validated)
             # Avoid disk I/O unless debugging
             if os.getenv('DEBUG', '0') == '1':
                 save_image(imagen)

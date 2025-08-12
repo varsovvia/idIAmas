@@ -421,7 +421,9 @@ def main():
         
 
         
-        if not TIMINGS_ONLY:
+        if TIMINGS_ONLY:
+            print("Ready. Press 'i' to translate; 'q' or 'Esc' to exit.")
+        else:
             print("Listener started. Press 'i' to translate, 'q' or 'Esc' to exit.")
         logger.info("Application started successfully")
         

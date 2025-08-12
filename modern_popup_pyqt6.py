@@ -28,6 +28,13 @@ import time
 import threading
 from typing import Optional, Dict, Any
 
+# Respect timings-only mode from environment by silencing prints in this module
+TIMINGS_ONLY = os.getenv('TIMINGS_ONLY', '0') == '1'
+if TIMINGS_ONLY:
+    def _noop_print(*args, **kwargs):
+        return None
+    print = _noop_print  # type: ignore
+
 # Simplified performance optimizations
 
 class AnimationManager:
@@ -1220,10 +1227,17 @@ finally:
         
         if sys.platform == 'win32':
             # Hide the console window for a cleaner experience
+            creation_flags = subprocess.CREATE_NO_WINDOW
+            stdout = subprocess.DEVNULL if os.getenv('TIMINGS_ONLY', '0') == '1' else None
+            stderr = subprocess.DEVNULL if os.getenv('TIMINGS_ONLY', '0') == '1' else None
             process = subprocess.Popen([sys.executable, script_file], 
-                                     creationflags=subprocess.CREATE_NO_WINDOW)
+                                       creationflags=creation_flags,
+                                       stdout=stdout,
+                                       stderr=stderr)
         else:
-            process = subprocess.Popen([sys.executable, script_file])
+            stdout = subprocess.DEVNULL if os.getenv('TIMINGS_ONLY', '0') == '1' else None
+            stderr = subprocess.DEVNULL if os.getenv('TIMINGS_ONLY', '0') == '1' else None
+            process = subprocess.Popen([sys.executable, script_file], stdout=stdout, stderr=stderr)
         
         _active_popup_processes.append(process)
         print(f"✨ Subprocess popup launched [PID: {process.pid}, ID: {popup_id}]")

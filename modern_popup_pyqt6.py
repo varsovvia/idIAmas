@@ -28,9 +28,10 @@ import time
 import threading
 from typing import Optional, Dict, Any
 
-# Respect timings-only mode from environment by silencing prints in this module
+# Respect timings-only mode; allow opt-out via POPUP_DEBUG=1
 TIMINGS_ONLY = os.getenv('TIMINGS_ONLY', '0') == '1'
-if TIMINGS_ONLY:
+POPUP_DEBUG = os.getenv('POPUP_DEBUG', '0') == '1'
+if TIMINGS_ONLY and not POPUP_DEBUG:
     def _noop_print(*args, **kwargs):
         return None
     print = _noop_print  # type: ignore

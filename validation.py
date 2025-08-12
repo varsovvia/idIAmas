@@ -65,6 +65,49 @@ def _build_grammar_text(items: List[Dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def _parse_grammar_text_to_items(grammar_text: str) -> List[Dict[str, Any]]:
+    """Parse plain-text grammar lines into item dicts.
+
+    Expected lines like:
+    - word: explanation (function)
+    or "word: explanation" without dash.
+    """
+    if not grammar_text:
+        return []
+    items: List[Dict[str, Any]] = []
+    for raw_line in grammar_text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.startswith('-'):
+            line = line.lstrip('-•').strip()
+        word = ""
+        explanation = line
+        function = ""
+        if ':' in line:
+            parts = line.split(':', 1)
+            word = parts[0].strip()
+            rest = parts[1].strip()
+            # Pull function in parentheses at the end if present
+            if '(' in rest and ')' in rest and rest.rfind('(') < rest.rfind(')'):
+                func_start = rest.rfind('(')
+                func_end = rest.rfind(')')
+                candidate = rest[func_start+1:func_end].strip()
+                function = candidate
+                rest = (rest[:func_start] + rest[func_end+1:]).strip()
+            explanation = rest
+        items.append({
+            'word': word,
+            'explanation': explanation,
+            'function': function,
+            'additional_info': '',
+            'examples': '',
+            'difficulty': '',
+        })
+    # Keep only meaningful entries
+    return [i for i in items if i['word'] or i['explanation']]
+
+
 def parse_and_validate_translation(payload: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
     """Parse a translation payload (JSON string or dict) and return a normalized dict.
 
@@ -94,7 +137,11 @@ def parse_and_validate_translation(payload: Union[str, Dict[str, Any]]) -> Dict[
 
         original = _as_string(data.get("original", "")).strip()
         translation = _as_string(data.get("translation", "")).strip()
-        grammar_items = _normalize_grammar_items(data.get("grammar", []))
+        raw_grammar = data.get("grammar", [])
+        grammar_items = _normalize_grammar_items(raw_grammar)
+        # If grammar provided as plain text, parse into items
+        if not grammar_items and isinstance(raw_grammar, str) and raw_grammar.strip():
+            grammar_items = _parse_grammar_text_to_items(raw_grammar)
     except Exception:
         # Fallback: regex-based extraction from raw text even if JSON is malformed/codefenced
         try:

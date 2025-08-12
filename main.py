@@ -25,14 +25,17 @@ except ImportError:
     logger = logging.getLogger(__name__)
     logger.info("python-dotenv not installed, using system environment variables only")
 
-# Configure logging
+# Configure logging with optional timings-only mode
+TIMINGS_ONLY = os.getenv('TIMINGS_ONLY', '0') == '1'
+
+_handlers = [logging.FileHandler('app.log')]
+if not TIMINGS_ONLY:
+    _handlers.append(logging.StreamHandler())
+
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.ERROR if TIMINGS_ONLY else logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('app.log'),
-        logging.StreamHandler()
-    ]
+    handlers=_handlers,
 )
 logger = logging.getLogger(__name__)
 
@@ -130,7 +133,8 @@ class SubtitleTranslator:
         if not texto:
             return ""
         
-        print(f"🔍 Raw OCR text: {texto}")
+        if not TIMINGS_ONLY:
+            print(f"🔍 Raw OCR text: {texto}")
         
         # Split into lines and process each one
         lineas = texto.split('\n')
@@ -141,18 +145,22 @@ class SubtitleTranslator:
             if not linea:
                 continue
             
-            print(f"📝 Line {i}: '{linea}'")
+            if not TIMINGS_ONLY:
+                print(f"📝 Line {i}: '{linea}'")
             
             # Simple filtering: keep lines that look like actual dialogue
             if self._es_linea_subtitulo_simple(linea):
-                print(f"✅ Keeping line: '{linea}'")
+                if not TIMINGS_ONLY:
+                    print(f"✅ Keeping line: '{linea}'")
                 lineas_limpias.append(linea)
             else:
-                print(f"❌ Filtering out line: '{linea}'")
+                if not TIMINGS_ONLY:
+                    print(f"❌ Filtering out line: '{linea}'")
         
         # Join clean lines
         resultado = '\n'.join(lineas_limpias)
-        print(f"🧹 Cleaned result: {resultado}")
+        if not TIMINGS_ONLY:
+            print(f"🧹 Cleaned result: {resultado}")
         
         return resultado.strip()
     
@@ -310,7 +318,7 @@ class SubtitleTranslator:
     
     def execute_translation(self) -> bool:
         """Execute complete translation workflow with timing and error handling"""
-        start_time = time.time()
+        t0 = time.perf_counter()
         
         try:
             logger.info("Starting translation workflow...")
@@ -320,25 +328,33 @@ class SubtitleTranslator:
             if imagen is None:
                 logger.error("Failed to capture image")
                 return False
-                
-            capture_time = time.time() - start_time
+            t1 = time.perf_counter()
+            capture_duration = t1 - t0
             if os.getenv('DEBUG', '0') == '1':
-                logger.info("Image capture completed in %.2f seconds", capture_time)
+                logger.info("Image capture completed in %.2f seconds", capture_duration)
             
             # Extract text
             texto = self.extraer_texto(imagen)
             if not texto:
                 logger.warning("No text to translate")
                 return False
-                
-            extraction_time = time.time() - start_time
+            t2 = time.perf_counter()
+            ocr_duration = t2 - t1
             if os.getenv('DEBUG', '0') == '1':
-                logger.info("Text extraction completed in %.2f seconds", extraction_time)
+                logger.info("Text extraction completed in %.2f seconds", ocr_duration)
             
             # Translate
             translation = self.translate_text_with_explanation(texto)
-            total_time = time.time() - start_time
-            logger.info("Translation workflow completed in %.2f seconds", total_time)
+            t3 = time.perf_counter()
+            translation_duration = t3 - t2
+            total_duration = t3 - t0
+            logger.info("Translation workflow completed in %.2f seconds", total_duration)
+
+            if TIMINGS_ONLY:
+                print(
+                    f"Timings | Capture: {capture_duration:.3f}s | OCR: {ocr_duration:.3f}s | "
+                    f"Translate: {translation_duration:.3f}s | Total: {total_duration:.3f}s"
+                )
             
             # Show results in modern desktop popup
             show_modern_popup(translation)
@@ -405,7 +421,8 @@ def main():
         
 
         
-        print("Listener started. Press 'i' to translate, 'q' or 'Esc' to exit.")
+        if not TIMINGS_ONLY:
+            print("Listener started. Press 'i' to translate, 'q' or 'Esc' to exit.")
         logger.info("Application started successfully")
         
         with keyboard.Listener(on_press=lambda key: on_press(translator, key)) as listener:

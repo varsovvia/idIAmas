@@ -26,10 +26,11 @@ class FadeOverlay(QWidget):
     Attaches to scroll area viewport and tracks scrolling automatically.
     """
     
-    def __init__(self, scroll_area: QScrollArea, fade_height: int = 64):
+    def __init__(self, scroll_area: QScrollArea, fade_height: int = 64, background_color: str = "#0b0b0b"):
         super().__init__(scroll_area.viewport())
         self.scroll_area = scroll_area
         self.fade_height = fade_height
+        self.background_color = background_color
         self.setup_overlay()
         self.connect_scroll_tracking()
     
@@ -68,89 +69,36 @@ class FadeOverlay(QWidget):
         viewport = self.scroll_area.viewport()
         viewport_rect = viewport.rect()
         
-        # Cover the entire viewport for all-sides gradient
+        # Cover the entire viewport for bottom fade
         self.setGeometry(viewport_rect)
     
-    def get_background_colors(self):
-        """Get background colors from application palette"""
-        palette = self.palette()
-        
-        # Try to get the popup background color
-        bg_color = palette.color(QPalette.ColorRole.Window)
-        
-        # If it's too dark/light, use a reasonable default
-        if bg_color.lightness() < 50:  # Dark theme
-            return QColor(26, 26, 46, 255), QColor(26, 26, 46, 0)
-        else:  # Light theme
-            return QColor(248, 249, 250, 255), QColor(248, 249, 250, 0)
-    
     def paintEvent(self, event):
-        """Paint inward-facing gradient fade overlays (vignette effect)"""
+        """Paint bottom gradient fade to popup background color"""
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
         # Set composition mode for proper blending
         painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
         
-        # Get background colors
-        bg_opaque, bg_transparent = self.get_background_colors()
-        
         rect = self.rect()
         fade_size = self.fade_height
         
-        # Create inward-facing gradients (vignette effect)
+        # Parse the background color
+        bg_color = QColor(self.background_color)
         
-        # Top gradient (fade FROM edge TO center)
-        if self.should_show_top_fade():
-            top_gradient = QLinearGradient(0, 0, 0, fade_size)
-            top_gradient.setColorAt(0.0, bg_opaque)  # Edge: opaque background
-            top_gradient.setColorAt(0.3, QColor(bg_opaque.red(), bg_opaque.green(), bg_opaque.blue(), 204))
-            top_gradient.setColorAt(0.7, QColor(bg_opaque.red(), bg_opaque.green(), bg_opaque.blue(), 77))
-            top_gradient.setColorAt(1.0, bg_transparent)  # Center: transparent
-            
-            top_rect = rect
-            top_rect.setHeight(fade_size)
-            painter.fillRect(top_rect, QBrush(top_gradient))
-        
-        # Bottom gradient (fade FROM edge TO center)
-        bottom_gradient = QLinearGradient(0, rect.height(), 0, rect.height() - fade_size)
-        bottom_gradient.setColorAt(0.0, bg_opaque)  # Edge: opaque background
-        bottom_gradient.setColorAt(0.3, QColor(bg_opaque.red(), bg_opaque.green(), bg_opaque.blue(), 204))
-        bottom_gradient.setColorAt(0.7, QColor(bg_opaque.red(), bg_opaque.green(), bg_opaque.blue(), 77))
-        bottom_gradient.setColorAt(1.0, bg_transparent)  # Center: transparent
+        # Bottom gradient: fade from transparent to popup background color
+        bottom_gradient = QLinearGradient(0, rect.height() - fade_size, 0, rect.height())
+        bottom_gradient.setColorAt(0.0, QColor(bg_color.red(), bg_color.green(), bg_color.blue(), 0))      # Start: transparent
+        bottom_gradient.setColorAt(0.5, QColor(bg_color.red(), bg_color.green(), bg_color.blue(), 128))   # Middle: semi-transparent
+        bottom_gradient.setColorAt(1.0, QColor(bg_color.red(), bg_color.green(), bg_color.blue(), 255))   # End: solid popup background
         
         bottom_rect = rect
         bottom_rect.setTop(rect.height() - fade_size)
         painter.fillRect(bottom_rect, QBrush(bottom_gradient))
-        
-        # Left gradient (fade FROM edge TO center)
-        left_gradient = QLinearGradient(0, 0, fade_size // 2, 0)
-        left_gradient.setColorAt(0.0, bg_opaque)  # Edge: opaque background
-        left_gradient.setColorAt(0.5, QColor(bg_opaque.red(), bg_opaque.green(), bg_opaque.blue(), 128))
-        left_gradient.setColorAt(1.0, bg_transparent)  # Center: transparent
-        
-        left_rect = rect
-        left_rect.setWidth(fade_size // 2)
-        painter.fillRect(left_rect, QBrush(left_gradient))
-        
-        # Right gradient (fade FROM edge TO center)
-        right_gradient = QLinearGradient(rect.width(), 0, rect.width() - fade_size // 2, 0)
-        right_gradient.setColorAt(0.0, bg_opaque)  # Edge: opaque background
-        right_gradient.setColorAt(0.5, QColor(bg_opaque.red(), bg_opaque.green(), bg_opaque.blue(), 128))
-        right_gradient.setColorAt(1.0, bg_transparent)  # Center: transparent
-        
-        right_rect = rect
-        right_rect.setLeft(rect.width() - fade_size // 2)
-        painter.fillRect(right_rect, QBrush(right_gradient))
-    
-    def should_show_top_fade(self):
-        """Check if we should show top fade (when scrolled down)"""
-        scroll_bar = self.scroll_area.verticalScrollBar()
-        return scroll_bar and scroll_bar.value() > 0
 
 
 class GrammarCard(QWidget):
-    """Individual card widget for grammar explanations with hover animations"""
+    """Individual card widget for grammar explanations with hover animations and enhanced details"""
     
     def __init__(self, word_data: dict):
         super().__init__()
@@ -162,30 +110,63 @@ class GrammarCard(QWidget):
         self.setup_animations()
     
     def setup_card(self):
-        """Setup card appearance and content"""
+        """Setup card appearance and content with enhanced details"""
         self.setObjectName("grammarCard")
         
-        # Create layout
+        # Create layout with better spacing
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(16, 12, 16, 12)
-        layout.setSpacing(8)
+        layout.setContentsMargins(20, 16, 20, 16)
+        layout.setSpacing(12)
         
-        # Word title
+        # Word title with larger, more prominent display
         word_label = QLabel(self.word_data.get('word', ''))
         word_label.setObjectName("wordTitle")
+        word_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(word_label)
         
-        # Grammatical function
+        # Difficulty indicator if available
+        if self.word_data.get('difficulty'):
+            difficulty_label = QLabel(f"🎯 {self.word_data['difficulty'].upper()}")
+            difficulty_label.setObjectName("difficultyIndicator")
+            difficulty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            layout.addWidget(difficulty_label)
+        
+        # Separator line for visual division
+        separator = QFrame()
+        separator.setFrameShape(QFrame.Shape.HLine)
+        separator.setObjectName("cardSeparator")
+        separator.setFixedHeight(1)
+        layout.addWidget(separator)
+        
+        # Grammatical function with enhanced styling
         if self.word_data.get('function'):
-            function_label = QLabel(f"({self.word_data['function']})")
+            function_label = QLabel(f"📚 {self.word_data['function']}")
             function_label.setObjectName("grammarFunction")
+            function_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             layout.addWidget(function_label)
         
-        # Explanation
+        # Explanation with better formatting
         explanation_label = QLabel(self.word_data.get('explanation', ''))
         explanation_label.setObjectName("grammarExplanation")
         explanation_label.setWordWrap(True)
+        explanation_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(explanation_label)
+        
+        # Additional details section if available
+        if self.word_data.get('additional_info'):
+            details_label = QLabel(f"ℹ️ {self.word_data['additional_info']}")
+            details_label.setObjectName("grammarDetails")
+            details_label.setWordWrap(True)
+            details_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            layout.addWidget(details_label)
+        
+        # Usage examples if available
+        if self.word_data.get('examples'):
+            examples_label = QLabel(f"💡 Ejemplos: {self.word_data['examples']}")
+            examples_label.setObjectName("grammarExamples")
+            examples_label.setWordWrap(True)
+            examples_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            layout.addWidget(examples_label)
     
     def setup_animations(self):
         """Setup hover and shine animations"""
@@ -195,7 +176,7 @@ class GrammarCard(QWidget):
         # Create shadow effect for hover glow
         self.shadow_effect = QGraphicsDropShadowEffect()
         self.shadow_effect.setBlurRadius(0)
-        self.shadow_effect.setColor(QColor(0, 212, 255, 0))
+        self.shadow_effect.setColor(QColor(76, 175, 80, 0))
         self.shadow_effect.setOffset(0, 2)
         self.setGraphicsEffect(self.shadow_effect)
         
@@ -222,8 +203,8 @@ class GrammarCard(QWidget):
         
         if self.color_animation:
             self.color_animation.stop()
-            self.color_animation.setStartValue(QColor(0, 212, 255, 0))
-            self.color_animation.setEndValue(QColor(0, 212, 255, 80))
+            self.color_animation.setStartValue(QColor(76, 175, 80, 0))
+            self.color_animation.setEndValue(QColor(76, 175, 80, 80))
             self.color_animation.start()
         
         # Trigger shine effect
@@ -243,8 +224,8 @@ class GrammarCard(QWidget):
         
         if self.color_animation:
             self.color_animation.stop()
-            self.color_animation.setStartValue(QColor(0, 212, 255, 80))
-            self.color_animation.setEndValue(QColor(0, 212, 255, 0))
+            self.color_animation.setStartValue(QColor(76, 175, 80, 80))
+            self.color_animation.setEndValue(QColor(76, 175, 80, 0))
             self.color_animation.start()
     
     def start_shine_effect(self):
@@ -279,8 +260,8 @@ class GrammarCard(QWidget):
             # Create subtle shine gradient
             shine_gradient = QLinearGradient(0, 0, self.width(), 0)
             shine_gradient.setColorAt(0.0, QColor(255, 255, 255, 0))
-            shine_gradient.setColorAt(0.3, QColor(0, 212, 255, 30))  # Cyan shine
-            shine_gradient.setColorAt(0.7, QColor(0, 212, 255, 30))
+            shine_gradient.setColorAt(0.3, QColor(76, 175, 80, 30))  # Green shine
+            shine_gradient.setColorAt(0.7, QColor(76, 175, 80, 30))
             shine_gradient.setColorAt(1.0, QColor(255, 255, 255, 0))
             
             # Paint shine effect
@@ -300,6 +281,17 @@ class PopupWindow(QMainWindow):
         super().__init__()
         self.translation_data = translation_data
         self.fade_overlays = []
+        
+        # Debug: Print what data we received
+        print(f"🔍 PopupWindow received data: {list(translation_data.keys())}")
+        for key, value in translation_data.items():
+            if isinstance(value, str):
+                print(f"  {key}: {len(value)} chars - {value[:100]}{'...' if len(value) > 100 else ''}")
+            elif isinstance(value, list):
+                print(f"  {key}: {len(value)} items - {value[:3]}{'...' if len(value) > 3 else ''}")
+            else:
+                print(f"  {key}: {type(value)} - {value}")
+        
         self.setup_window()
         self.setup_ui()
         self.setup_shortcuts()
@@ -348,7 +340,7 @@ class PopupWindow(QMainWindow):
         # Tab widget for content
         self.create_tabs(root_layout)
         
-        # Footer with copy button and status
+        # Footer with status (copy moved to header)
         self.create_footer(root_layout)
     
     def create_header(self, parent_layout):
@@ -388,13 +380,24 @@ class PopupWindow(QMainWindow):
         
         # Spacer
         header_layout.addStretch()
-        
-        # Close button
+
+        # Header actions: Copy + Close
+        actions = QHBoxLayout()
+        actions.setContentsMargins(0, 0, 0, 0)
+        actions.setSpacing(8)
+        copy_btn = QPushButton("⧉ Copy")
+        copy_btn.setObjectName("copyButton")
+        copy_btn.setFixedHeight(32)
+        copy_btn.clicked.connect(self.copy_content)
+        actions.addWidget(copy_btn)
+
         close_btn = QPushButton("×")
         close_btn.setObjectName("closeButton")
         close_btn.setFixedSize(32, 32)
         close_btn.clicked.connect(self.close)
-        header_layout.addWidget(close_btn)
+        actions.addWidget(close_btn)
+
+        header_layout.addLayout(actions)
         
         parent_layout.addWidget(header_frame)
     
@@ -404,19 +407,49 @@ class PopupWindow(QMainWindow):
         tab_widget.setObjectName("mainTabs")
         
         # Original text tab
-        if 'original' in self.translation_data:
-            original_tab = self.create_text_tab(self.translation_data['original'])
+        original_content = self.translation_data.get('original', '')
+        if original_content and original_content.strip():
+            original_tab = self.create_text_tab(original_content)
             tab_widget.addTab(original_tab, "IT | Original")
+        else:
+            # Fallback: show raw data if original is empty
+            fallback_content = str(self.translation_data.get('original', 'No original text available'))
+            if fallback_content == 'No original text available':
+                # Try to show the raw translation data for debugging
+                fallback_content = f"Debug: Raw data keys: {list(self.translation_data.keys())}\n\nRaw content:\n{str(self.translation_data)}"
+            fallback_tab = self.create_text_tab(fallback_content)
+            tab_widget.addTab(fallback_tab, "IT | Original")
         
         # Translation tab
-        if 'translation' in self.translation_data:
-            translation_tab = self.create_text_tab(self.translation_data['translation'])
+        translation_content = self.translation_data.get('translation', '')
+        if translation_content and translation_content.strip():
+            translation_tab = self.create_text_tab(translation_content)
             tab_widget.addTab(translation_tab, "ES | Translation")
+        else:
+            # Fallback: show raw data if translation is empty
+            fallback_content = str(self.translation_data.get('translation', 'No translation available'))
+            if fallback_content == 'No translation available':
+                # Try to show the raw translation data for debugging
+                fallback_content = f"Debug: Raw data keys: {list(self.translation_data.keys())}\n\nRaw content:\n{str(self.translation_data)}"
+            fallback_tab = self.create_text_tab(fallback_content)
+            tab_widget.addTab(fallback_tab, "ES | Translation")
         
         # Grammar tab with cards and fade overlay
-        if 'grammar' in self.translation_data:
-            grammar_tab = self.create_grammar_tab(self.translation_data['grammar'])
+        grammar_content = None
+        if 'grammar_json' in self.translation_data:
+            grammar_content = self.translation_data.get('grammar_json')
+        elif 'grammar' in self.translation_data:
+            grammar_content = self.translation_data.get('grammar')
+
+        if grammar_content is not None:
+            grammar_tab = self.create_grammar_tab(grammar_content)
             tab_widget.addTab(grammar_tab, "※ Grammar")
+        else:
+            # Fallback: show raw grammar data if available
+            raw_grammar = self.translation_data.get('grammar', '')
+            if raw_grammar:
+                grammar_tab = self.create_grammar_tab(raw_grammar)
+                tab_widget.addTab(grammar_tab, "※ Grammar")
         
         parent_layout.addWidget(tab_widget)
     
@@ -434,7 +467,13 @@ class PopupWindow(QMainWindow):
         
         return tab
     
-    def create_grammar_tab(self, content: str) -> QWidget:
+    def get_background_color(self) -> str:
+        """Get the primary background color from the stylesheet"""
+        # Extract the background color from the stylesheet
+        # This matches the bg_primary color defined in apply_styles
+        return "#0b0b0b"
+    
+    def create_grammar_tab(self, content) -> QWidget:
         """Create grammar tab with scrollable cards and fade overlay"""
         tab = QWidget()
         tab_layout = QVBoxLayout(tab)
@@ -454,7 +493,43 @@ class PopupWindow(QMainWindow):
         content_layout.setSpacing(12)
         
         # Parse and create grammar cards
-        word_explanations = self.parse_grammar_content(content)
+        # If content is already a JSON array/list, prefer that
+        word_explanations = []
+        try:
+            import json
+            if isinstance(content, list):
+                for item in content:
+                    word_explanations.append({
+                        'word': item.get('word', ''),
+                        'explanation': item.get('explanation', ''),
+                        'function': item.get('function', ''),
+                        'additional_info': item.get('additional_info', ''),
+                        'examples': item.get('examples', ''),
+                        'difficulty': item.get('difficulty', ''),
+                    })
+            elif isinstance(content, str):
+                c = content.strip()
+                if c.startswith('[') and c.endswith(']'):
+                    grammar_items = json.loads(c)
+                    for item in grammar_items:
+                        word_explanations.append({
+                            'word': item.get('word', ''),
+                            'explanation': item.get('explanation', ''),
+                            'function': item.get('function', ''),
+                            'additional_info': item.get('additional_info', ''),
+                            'examples': item.get('examples', ''),
+                            'difficulty': item.get('difficulty', ''),
+                        })
+        except Exception:
+            # Fall back to text parsing
+            pass
+
+        if not word_explanations:
+            # Only attempt string parsing if the content is a string
+            if isinstance(content, str):
+                word_explanations = self.parse_grammar_content(content)
+            else:
+                word_explanations = []
         
         if word_explanations:
             for word_data in word_explanations:
@@ -462,7 +537,10 @@ class PopupWindow(QMainWindow):
                 content_layout.addWidget(card)
         else:
             # Fallback for unparseable content
-            fallback_label = QLabel(content)
+            message = "No grammar explanation available."
+            if isinstance(content, str) and content.strip():
+                message = content
+            fallback_label = QLabel(message)
             fallback_label.setWordWrap(True)
             fallback_label.setObjectName("fallbackText")
             content_layout.addWidget(fallback_label)
@@ -472,7 +550,8 @@ class PopupWindow(QMainWindow):
         tab_layout.addWidget(scroll_area)
         
         # Add fade overlay to scroll area
-        fade_overlay = FadeOverlay(scroll_area)
+        # Use the exact background color from stylesheet for perfect blending
+        fade_overlay = FadeOverlay(scroll_area, background_color=self.get_background_color())
         self.fade_overlays.append(fade_overlay)
         
         return tab
@@ -490,12 +569,6 @@ class PopupWindow(QMainWindow):
         footer_layout.addWidget(status_label)
         
         footer_layout.addStretch()
-        
-        # Copy button
-        copy_btn = QPushButton("⧉ Copy")
-        copy_btn.setObjectName("copyButton")
-        copy_btn.clicked.connect(self.copy_content)
-        footer_layout.addWidget(copy_btn)
         
         parent_layout.addWidget(footer_frame)
     
@@ -578,25 +651,14 @@ class PopupWindow(QMainWindow):
         # Get colors from palette for theme compatibility
         palette = self.palette()
         
-        # Define colors based on theme
-        if palette.color(QPalette.ColorRole.Window).lightness() < 128:
-            # Dark theme colors
-            bg_primary = "rgba(26, 26, 46, 0.95)"
-            bg_secondary = "rgba(16, 16, 32, 0.9)"
-            text_primary = "#ffffff"
-            text_secondary = "#a8a8a8"
-            accent_color = "#00d4ff"
-            card_bg = "rgba(255, 255, 255, 0.1)"
-            border_color = "rgba(255, 255, 255, 0.2)"
-        else:
-            # Light theme colors
-            bg_primary = "rgba(248, 249, 250, 0.95)"
-            bg_secondary = "rgba(255, 255, 255, 0.9)"
-            text_primary = "#2c3e50"
-            text_secondary = "#6c757d"
-            accent_color = "#007bff"
-            card_bg = "rgba(255, 255, 255, 0.8)"
-            border_color = "rgba(0, 0, 0, 0.1)"
+        # High-contrast palette: almost black/white with blue accents
+        bg_primary = "#0b0b0b"          # near black
+        bg_secondary = "#111111"        # slightly lighter black
+        text_primary = "#f4f4f4"        # near white
+        text_secondary = "#b9b9b9"      # muted grey
+        accent_color = "#2aa3ff"       # vivid blue
+        card_bg = "#1a1a1a"            # dark card background
+        border_color = "#2a2a2a"       # subtle dark border
         
         style = f"""
         QMainWindow {{
@@ -619,21 +681,18 @@ class PopupWindow(QMainWindow):
             font-size: 24px;
             font-weight: 300;
             color: {text_primary};
-            letter-spacing: 1px;
         }}
         
         #titleAccent {{
             font-size: 24px;
             font-weight: 900;
             color: {accent_color};
-            letter-spacing: 1px;
         }}
         
         #subtitle {{
             font-size: 12px;
             color: {text_secondary};
             font-weight: 400;
-            margin-top: 2px;
         }}
         
         #closeButton {{
@@ -667,7 +726,7 @@ class PopupWindow(QMainWindow):
         }}
         
         #mainTabs::tab-bar {{
-            alignment: center;
+            /* alignment: center; */
         }}
         
         #mainTabs QTabBar::tab {{
@@ -681,7 +740,7 @@ class PopupWindow(QMainWindow):
         }}
         
         #mainTabs QTabBar::tab:hover {{
-            background: rgba(0, 212, 255, 0.1);
+            background: rgba(42, 163, 255, 0.12);
             color: {accent_color};
         }}
         
@@ -696,7 +755,6 @@ class PopupWindow(QMainWindow):
             border: none;
             color: {text_primary};
             font-size: 14px;
-            line-height: 1.5;
             padding: 8px;
         }}
         
@@ -707,38 +765,62 @@ class PopupWindow(QMainWindow):
         
         #grammarCard {{
             background: {card_bg};
-            border: none;
-            border-radius: 8px;
-            margin-bottom: 8px;
+            border: 2px solid {border_color};
+            border-radius: 16px;
+            margin-bottom: 16px;
+            padding: 8px;
         }}
         
         #grammarCard:hover {{
-            background: rgba(0, 212, 255, 0.1);
-            border: none;
+            background: rgba(76, 175, 80, 0.15);
+            border: 2px solid rgba(76, 175, 80, 0.5);
         }}
         
         #wordTitle {{
             color: {accent_color};
-            font-size: 16px;
-            font-weight: bold;
+            font-size: 20px;
+            font-weight: 900;
+        }}
+        
+        #difficultyIndicator {{
+            color: {accent_color};
+            font-size: 14px;
+            font-weight: 700;
         }}
         
         #grammarFunction {{
             color: {text_secondary};
-            font-size: 12px;
+            font-size: 14px;
             font-style: italic;
+            font-weight: 600;
         }}
         
         #grammarExplanation {{
             color: {text_primary};
-            font-size: 14px;
-            line-height: 1.4;
+            font-size: 16px;
+            font-weight: 500;
+        }}
+        
+        #grammarDetails {{
+            color: {text_secondary};
+            font-size: 13px;
+            font-style: italic;
+        }}
+        
+        #grammarExamples {{
+            color: {accent_color};
+            font-size: 13px;
+            font-weight: 500;
+        }}
+        
+        #cardSeparator {{
+            background: {accent_color};
+            opacity: 0.6;
         }}
         
         #fallbackText {{
             color: {text_primary};
             font-size: 14px;
-            line-height: 1.5;
         }}
         
         #footerFrame {{

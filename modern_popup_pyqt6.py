@@ -18,42 +18,17 @@ from PyQt6.QtCore import (Qt, QTimer, QPropertyAnimation, QEasingCurve, QRect, p
 from PyQt6.QtGui import (QFont, QPalette, QColor, QIcon, QPixmap, QPainter, QBrush, 
                          QLinearGradient, QPen, QGradient, QRadialGradient)
 
-# Global QApplication manager
-class QtAppManager:
-    _instance = None
-    _app = None
-    _running = False
-    
-    @classmethod
-    def get_instance(cls):
-        if cls._instance is None:
-            cls._instance = cls()
-        return cls._instance
-    
-    def get_or_create_app(self):
-        """Get or create QApplication instance"""
-        if self._app is None:
-            self._app = QApplication.instance()
-            if self._app is None:
-                self._app = QApplication(sys.argv)
-        return self._app
-    
-    def start_event_processing(self):
-        """Start processing events using QTimer"""
-        if not self._running and self._app:
-            self._running = True
-            # Use QTimer to process events regularly
-            self.timer = QTimer()
-            self.timer.timeout.connect(self._process_events)
-            self.timer.start(50)  # Process events every 50ms (less aggressive)
-    
-    def _process_events(self):
-        """Process pending events safely"""
-        try:
-            if self._app:
-                self._app.processEvents()
-        except Exception as e:
-            print(f"Event processing error: {e}")
+import subprocess
+import tempfile
+import json
+import os
+import sys
+import uuid
+import time
+import threading
+from typing import Optional, Dict, Any
+
+# Simplified performance optimizations
 
 class AnimationManager:
     """Manages all animations for the popup"""
@@ -1268,9 +1243,225 @@ finally:
         return None
 
 def parse_ai_response(texto: str) -> dict:
-    """Parse the AI response into structured sections"""
+    """Parse the AI response into structured sections.
+    Supports two formats:
+      1) Strict JSON: {original, translation, grammar:[{word,explanation,function}]}
+      2) Legacy plain text with headers.
+    """
     print(f"🔍 Parsing AI response:\n{texto}\n" + "="*50)
-    
+
+    # Initialize defaults to avoid scope issues
+    original: str = ""
+    translation: str = ""
+    grammar_items = []
+
+    # First, try a resilient regex extraction (works even with malformed JSON/code fences)
+    try:
+        import re, json
+        s = texto
+        s_nf = re.sub(r"```(json)?", "", s)
+        # Pull original/translation if present
+        m_orig = re.search(r'"original"\s*:\s*"([\s\S]*?)"', s_nf)
+        m_trans = re.search(r'"translation"\s*:\s*"([\s\S]*?)"', s_nf)
+        if m_orig:
+            original = m_orig.group(1).strip()
+        if m_trans:
+            translation = m_trans.group(1).strip()
+        # Prefer JSON array for grammar if available; otherwise per-item scan
+        m_gram = re.search(r'"grammar"\s*:\s*(\[[\s\S]*?\])', s_nf)
+        if m_gram:
+            gram_str = m_gram.group(1)
+            try:
+                grammar_items = json.loads(gram_str)
+            except Exception:
+                gram_repaired = re.sub(r",\s*\]", "]", gram_str)
+                try:
+                    grammar_items = json.loads(gram_repaired)
+                except Exception:
+                    grammar_items = []
+        if not grammar_items:
+            obj_iter = re.finditer(r'\{[^{}]*?"word"\s*:\s*"([\s\S]*?)"[^{}]*?"explanation"\s*:\s*"([\s\S]*?)"([^{}]*?"function"\s*:\s*"([\s\S]*?)")?[^{}]*?\}', s_nf)
+            extracted = []
+            for m in obj_iter:
+                w = m.group(1).strip()
+                ex = m.group(2).strip()
+                fn = (m.group(4).strip() if m.group(4) else '')
+                if w or ex:
+                    extracted.append({'word': w, 'explanation': ex, 'function': fn})
+            grammar_items = extracted
+    except Exception as _:
+        pass
+
+    # Next, try strict JSON parsing to override with authoritative values when valid
+    try:
+        import json
+        import re
+        s = texto.strip()
+        # Extract JSON object if wrapped in extra text or fences
+        start = s.find('{')
+        end = s.rfind('}')
+        if start != -1 and end != -1 and end > start:
+            json_str = s[start:end+1]
+            print(f"🔍 Extracted JSON string: {json_str[:200]}...")
+            
+            try:
+                data = json.loads(json_str)
+                print(f"🔍 Parsed JSON data keys: {list(data.keys())}")
+                
+                # Extract the actual content fields
+                original = data.get('original', '') or original
+                translation = data.get('translation', '') or translation
+                grammar_items = data.get('grammar', []) or grammar_items
+                
+                print(f"🔍 Raw extracted values:")
+                print(f"  original: '{original}'")
+                print(f"  translation: '{translation}'")
+                print(f"  grammar_items count: {len(grammar_items)}")
+                
+                # Validate that we got actual content
+                if not original or not translation:
+                    print(f"❌ WARNING: Missing content - original: {bool(original)}, translation: {bool(translation)}")
+                    # Try to extract from the raw text as fallback
+                    if not original and 'original' in s:
+                        # Look for content after "original": 
+                        orig_start = s.find('"original": "') + 12
+                        if orig_start > 11:
+                            orig_end = s.find('"', orig_start)
+                            if orig_end > orig_start:
+                                original = s[orig_start:orig_end]
+                                print(f"🔧 Fallback extracted original: '{original}'")
+                    
+                    if not translation and 'translation' in s:
+                        # Look for content after "translation": 
+                        trans_start = s.find('"translation": "') + 15
+                        if trans_start > 14:
+                            trans_end = s.find('"', trans_start)
+                            if trans_end > trans_start:
+                                translation = s[trans_start:trans_end]
+                                print(f"🔧 Fallback extracted translation: '{translation}'")
+                
+            except json.JSONDecodeError as e:
+                print(f"❌ JSON decode error: {e}")
+                # Fall back to legacy parsing
+                pass
+
+            # Convert grammar array to plain-text lines the rest of UI expects as fallback
+            grammar_text_lines = []
+            for item in grammar_items:
+                word = str(item.get('word', '')).strip()
+                explanation = str(item.get('explanation', '')).strip()
+                function = str(item.get('function', '')).strip()
+                if word and explanation:
+                    line = f"- {word}: {explanation}"
+                    if function:
+                        line += f" ({function})"
+                    grammar_text_lines.append(line)
+
+            sections = {
+                'original': original.strip(),
+                'translation': translation.strip(),
+                'grammar': '\n'.join(grammar_text_lines).strip(),
+                'grammar_json': grammar_items,  # keep structured data for card builder
+            }
+            
+            # Debug: Print what we're sending to the popup
+            print(f"📄 Parsed sections: {list(sections.keys())}")
+            print(f"  original: {len(sections['original'])} chars - {sections['original']}")
+            print(f"  translation: {len(sections['translation'])} chars - {sections['translation']}")
+            print(f"  grammar: {len(sections['grammar'])} chars - {sections['grammar']}")
+
+            print("📦 Detected JSON response; parsed successfully.")
+            print(f"🎯 Parsed sections: original={len(sections['original'])} chars, translation={len(sections['translation'])} chars, grammar_items={len(grammar_items)}")
+            return sections
+    except Exception as e:
+        print(f"❌ JSON parsing failed: {e}")
+        # Try a regex-based fallback extraction from the raw text, even if JSON is malformed/codefenced
+        try:
+            import re, json
+            s = texto
+            # Remove code fences
+            s = re.sub(r"```(json)?", "", s)
+            # Extract original and translation via regex
+            m_orig = re.search(r'"original"\s*:\s*"([\s\S]*?)"\s*,', s)
+            m_trans = re.search(r'"translation"\s*:\s*"([\s\S]*?)"\s*,', s)
+            original = m_orig.group(1).strip() if m_orig else ""
+            translation = m_trans.group(1).strip() if m_trans else ""
+            # Extract grammar array content
+            m_gram = re.search(r'"grammar"\s*:\s*(\[[\s\S]*?\])', s)
+            grammar_items = []
+            if m_gram:
+                gram_str = m_gram.group(1)
+                try:
+                    grammar_items = json.loads(gram_str)
+                except Exception:
+                    # Attempt to repair common trailing comma issues
+                    gram_repaired = re.sub(r",\s*\]", "]", gram_str)
+                    try:
+                        grammar_items = json.loads(gram_repaired)
+                    except Exception:
+                        # Last resort: extract per-item objects with regex
+                        obj_matches = re.findall(r"\{[\s\S]*?\}", gram_str)
+                        extracted_items = []
+                        for obj in obj_matches:
+                            # Pull fields individually and ignore JSON validity
+                            def _field(name):
+                                m = re.search(fr'"{name}"\s*:\s*"([\s\S]*?)"', obj)
+                                return m.group(1).strip() if m else ""
+                            item = {
+                                'word': _field('word'),
+                                'explanation': _field('explanation'),
+                                'function': _field('function'),
+                                'additional_info': _field('additional_info'),
+                                'examples': _field('examples'),
+                                'difficulty': _field('difficulty'),
+                            }
+                            if item['word'] or item['explanation']:
+                                extracted_items.append(item)
+                        grammar_items = extracted_items
+
+            # If still empty, try global extraction of objects regardless of array structure
+            if not grammar_items:
+                try:
+                    obj_iter = re.finditer(r'"word"\s*:\s*"([\s\S]*?)"[\s\S]*?"explanation"\s*:\s*"([\s\S]*?)"([\s\S]*?"function"\s*:\s*"([\s\S]*?)")?', s)
+                    extracted = []
+                    for m in obj_iter:
+                        word_val = m.group(1).strip()
+                        expl_val = m.group(2).strip()
+                        func_val = (m.group(4).strip() if m.group(4) else '')
+                        if word_val or expl_val:
+                            extracted.append({
+                                'word': word_val,
+                                'explanation': expl_val,
+                                'function': func_val,
+                            })
+                    grammar_items = extracted
+                except Exception as _:
+                    pass
+
+            grammar_text_lines = []
+            for item in grammar_items or []:
+                word = str(item.get('word', '')).strip()
+                explanation = str(item.get('explanation', '')).strip()
+                function = str(item.get('function', '')).strip()
+                if word and explanation:
+                    line = f"- {word}: {explanation}"
+                    if function:
+                        line += f" ({function})"
+                    grammar_text_lines.append(line)
+
+            sections = {
+                'original': original,
+                'translation': translation,
+                'grammar': '\n'.join(grammar_text_lines).strip(),
+                'grammar_json': grammar_items,
+            }
+            print("🧩 Regex fallback extracted sections successfully")
+            return sections
+        except Exception as e2:
+            print(f"⚠️ Regex fallback failed: {e2}")
+        # Fall through to legacy parsing
+        pass
+
     sections = {
         'original': '',
         'translation': '',
@@ -1295,10 +1486,40 @@ def parse_ai_response(texto: str) -> dict:
         elif any(keyword in line.lower() for keyword in ['grammar explanation', 'explicación gramatical', 'gramática', 'explicación', 'palabras', 'función']):
             current_section = 'grammar'
             continue
+        
+        # Smart detection: if line contains grammatical patterns, treat as grammar
+        if (':' in line and any(term in line.lower() for term in [
+            'pronombre', 'verbo', 'sustantivo', 'adjetivo', 'preposición', 'conjunción',
+            'interjección', 'adverbio', 'presente', 'indicativo', 'significa', 'primera persona',
+            'segunda persona', 'tercera persona', 'singular', 'plural', 'femenino', 'masculino'
+        ])):
+            current_section = 'grammar'
             
         # Add line to current section
         if current_section in sections:
             sections[current_section] += line + '\n'
+    
+    # Post-processing: Move grammar explanations from translation to grammar
+    translation_lines = sections['translation'].split('\n')
+    clean_translation_lines = []
+    grammar_lines = []
+    
+    for line in translation_lines:
+        line = line.strip()
+        if line and ':' in line and any(term in line.lower() for term in [
+            'pronombre', 'verbo', 'sustantivo', 'adjetivo', 'preposición', 'conjunción',
+            'interjección', 'adverbio', 'presente', 'indicativo', 'significa'
+        ]):
+            grammar_lines.append(line)
+        elif line and not any(term in line.lower() for term in [
+            'pronombre', 'verbo', 'sustantivo', 'significa', 'primera persona'
+        ]):
+            clean_translation_lines.append(line)
+    
+    # Update sections
+    sections['translation'] = '\n'.join(clean_translation_lines)
+    if grammar_lines:
+        sections['grammar'] += '\n'.join(grammar_lines)
     
     # Debug output
     print(f"🎯 Parsed sections:")
@@ -1347,27 +1568,16 @@ if __name__ == "__main__":
 
 def show_modern_popup(texto: str):
     """
-    New main function to display translation results using subprocess approach.
-    Always uses subprocess to avoid threading issues with QApplication.
+    Optimized popup display with simplified process management.
     """
-    global _active_popup_processes, _last_popup_time
-    
-    # Prevent rapid-fire popups (wait at least 2 seconds between popups)
-    import time
-    current_time = time.time()
-    if current_time - _last_popup_time < 2.0:
-        print("⏰ Popup request too soon, ignoring...")
-        return None
-    _last_popup_time = current_time
-    
-    print("🚀 Starting modern popup display...")
+    print("🚀 Starting optimized popup display...")
     
     try:
         # Parse the AI response
         sections = parse_ai_response(texto)
         print(f"📄 Parsed sections: {list(sections.keys())}")
         
-        # Always use subprocess approach to avoid threading issues
+        # Use the working subprocess approach
         return _create_modern_subprocess_popup(sections)
         
     except Exception as error:

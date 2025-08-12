@@ -20,6 +20,10 @@ def launch_popup_subprocess(sections: Dict[str, Any]) -> Optional[subprocess.Pop
 
     Silences stdout/stderr when TIMINGS_ONLY=1 and POPUP_DEBUG!=1.
     """
+    # Allow simulation for tests or headless CI
+    if os.getenv('POPUP_SIMULATE', '0') == '1':
+        return None
+
     # Create a temporary file with the translation data
     with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False, encoding='utf-8') as f:
         json.dump(sections, f, ensure_ascii=False)
